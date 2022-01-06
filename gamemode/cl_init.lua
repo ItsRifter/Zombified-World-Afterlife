@@ -1,1 +1,6 @@
 include("shared.lua")
+include("client/hud/cl_hud.lua")
+include("client/hud/cl_scoreboard.lua")
+include("client/cl_fonts.lua")
+include("client/panels/cl_panels.lua")
+include("client/menus/cl_qmenu.lua")

@@ -1,8 +1,20 @@
 local function InitData(ply)
     ply.ZWR = ply.ZWR or {}
 
+    --Basics
     ply.ZWR.Name = ply.ZWR.Name or ply:Nick()
 	ply.ZWR.Model = ply.ZWR.Model or "models/player/Group01/male_07.mdl"
+    
+    --Leveling etc.
+    ply.ZWR.Level = ply.ZWR.Level or 0
+    ply.ZWR.Money = ply.ZWR.Money or 0
+    ply.ZWR.EXP = ply.ZWR.EXP or 0
+
+    --Inventory
+    ply.ZWR.Inventory = ply.ZWR.Inventory or {}
+    
+    --Skills
+    ply.ZWR.Skills = ply.ZWR.Skills or {}
 end
 
 
