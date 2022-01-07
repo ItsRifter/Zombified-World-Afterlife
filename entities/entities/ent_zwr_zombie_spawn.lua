@@ -5,16 +5,20 @@ ENT.Type = "point"
 
 ENT.LastZombies = {}
 ENT.SpawnTime = 0
-ENT.TotalZombies = 0
+ENT.TotalZombies = ENT.TotalZombies or 0
 ENT.MaxZombies = 3
---sent_vj_zss_zombierand
+
 
 --Spawns the zombie
 function ENT:SpawnZombie()
     
-    self.SpawnTime = math.random(6, 15) + CurTime()
+    self.SpawnTime = math.random(8, 25) + CurTime()
 
-    local zombie = ents.Create("sent_vj_zss_zombierand")
+    --Instead of using the random zombie npc (since it doesn't work well)
+    --just use the hardcoded method of getting a random model zombie
+    local zombClass = "npc_vj_zss_zombie" .. math.random(1, 9)
+
+    local zombie = ents.Create(zombClass)
     zombie:SetPos(self:GetPos())
     zombie:Spawn()
 
@@ -24,9 +28,10 @@ function ENT:SpawnZombie()
     zombie.TurningSpeed = 45
     zombie.StartHealth = math.random(50, 100)
 
-    table.insert(self.LastZombies, zombie:EntIndex())
-
-    self.TotalZombies = self.TotalZombies + 1
+    timer.Create("ZWR_ZombieSpawn_" .. zombie:EntIndex(), 0.1, 1, function()
+        table.insert(self.LastZombies, zombie)
+        self.TotalZombies = self.TotalZombies + 1
+    end)
 end
 
 function ENT:Think()
@@ -38,19 +43,24 @@ function ENT:Think()
         return
     end
     
+    --If we exceed the total zombies this can spawn, stop here
+    if self.TotalZombies >= self.MaxZombies then return end
+
     for i, z in ipairs(self.LastZombies) do
-        if not z:IsValid() then
+        if not z:IsValid() or z:Health() <= 0 then
             table.remove(self.LastZombies, i)
+            self.TotalZombies = self.TotalZombies - 1
         end
     end
 
+    --If the zombie is too close to spawn, stop here,
     for _, v in pairs(ents.FindInSphere(self:GetPos(), 25)) do
         if v:IsNPC() then
-            return 
+            return
         end
     end
     
-    --After the last randomized spawn time is passed, is night time
+    --After the last randomized spawn time is passed and is night time
     --spawn a zombie
     if self.SpawnTime < CurTime() and isNightTime then
         self:SpawnZombie()

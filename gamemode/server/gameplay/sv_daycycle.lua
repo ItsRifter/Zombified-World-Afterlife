@@ -1,44 +1,55 @@
 --Time in seconds till a switch in cycle
-local timeUntilNight = 360
-local timeUntilDay = 720
+local timeUntilNight = 300
+local timeUntilDay = 600
 
-local cycleTime = 0
+server_cycleTime = 0
 
-isDayTime = false
-isNightTime = true
+server_isDayTime = false
+server_isNightTime = true
 
 hook.Add("Think", "ZWR_CycleThink", function()
-    if cycleTime < CurTime() and isDayTime then
+    if server_cycleTime < CurTime() and server_isDayTime then
         BeginNightCycle()
-    elseif cycleTime < CurTime() and isNightTime then
+    elseif server_cycleTime < CurTime() and server_isNightTime then
         BeginDayCycle()
     end
 end)
 
 function BeginNightCycle()
-    isDayTime = false
-    isNightTime = true
+    server_isDayTime = false
+    server_isNightTime = true
 
     BroadcastSound("zwr/nightfall.wav")
 
-    cycleTime = timeUntilDay + CurTime()
+    server_cycleTime = timeUntilDay + CurTime()
+
+    for _, v in ipairs(player.GetAll()) do
+        v:SetNWInt("ZWR_Time", server_cycleTime)
+        v:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
+    end
 end
 
 function BeginDayCycle()
-    isDayTime = true
-    isNightTime = false
+    server_isDayTime = true
+    server_isNightTime = false
     
     --BroadcastSound("/music/ravenholm_1.mp3")
 
-    cycleTime = timeUntilNight + CurTime()
+    server_cycleTime = timeUntilNight + CurTime()
+
+    for _, v in ipairs(player.GetAll()) do
+        v:SetNWInt("ZWR_Time", server_cycleTime)
+        v:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
+    end
+
 end
 
 concommand.Add("zwr_togglecycle", function(ply)
     if not ply:IsAdmin() then return end
 
-    if isDayTime then
+    if server_isDayTime then
         BeginNightCycle()
-    elseif isNightTime then
+    elseif server_isNightTime then
         BeginDayCycle()
     end
 end)
@@ -46,9 +57,9 @@ end)
 concommand.Add("zwr_getcycle", function(ply)
     if not ply:IsAdmin() then return end
 
-    if isDayTime then
+    if server_isDayTime then
         ply:PrintMessage(HUD_PRINTCONSOLE, "Day")
-    elseif isNightTime then
+    elseif server_isNightTime then
         ply:PrintMessage(HUD_PRINTCONSOLE, "Night")
     end
 end)

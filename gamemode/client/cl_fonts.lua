@@ -86,3 +86,14 @@ surface.CreateFont( "ZWR_Scoreboard_Stats", {
 	scanlines = 0,
 	antialias = true,
 } )
+
+--NPC
+surface.CreateFont( "ZWR_NPC_Name", {
+	font = "Arial",
+	extended = false,
+	size = 20,
+	weight = 250,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )

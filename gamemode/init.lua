@@ -4,6 +4,7 @@ include("server/player/sv_playerbase.lua")
 include("server/player/sv_progress.lua")
 include("server/filesaving/sv_flatfile.lua")
 include("server/gameplay/sv_daycycle.lua")
+include("server/gameplay/sv_npc.lua")
 include("server/maps/sv_zombiespawns.lua")
 
 --Client files

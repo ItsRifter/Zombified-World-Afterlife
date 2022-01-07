@@ -26,6 +26,10 @@ function PlayerSpawn(ply)
     ply:SetNWInt("ZWR_Stat_Stamina", ply.playerStamina)
     ply:SetNWInt("ZWR_Stat_FlashlightBattery", ply.flashBattery)
 
+    --Network Time
+    ply:SetNWInt("ZWR_Time", server_cycleTime)
+    ply:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
+
     --Network the statistics if its a player
     if ply.ZWR then
         ply:SetModel(ply.ZWR.Model)

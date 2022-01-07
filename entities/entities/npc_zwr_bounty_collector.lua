@@ -3,7 +3,7 @@ AddCSLuaFile()
 ENT.Base = "base_entity"
 ENT.Type = "ai"
 ENT.Model = "models/player/odessa.mdl"
-ENT.PrintName = "Urien (Weapons Dealer)"
+ENT.PrintName = "Bobby Jr (Bounty Collector)"
 
 local lastUse = 0
 
@@ -23,11 +23,17 @@ end
 function ENT:Use(activator, caller)
     if lastUse > CurTime() then return end
 
-    lastUse = 3 + CurTime()
+    lastUse = 1 + CurTime()
 
-    net.Start("ZWR_OpenShop")
-    net.WriteString("weapon")
-    net.Send(activator)
+    if activator:IsPlayer() then
+        if activator.curBounty > 0 then
+            AddCash(activator, activator.curBounty)
+            activator:ChatPrint("Heres " .. activator.curBounty .. " in cash")
+            activator.curBounty = 0
+        else
+            activator:ChatPrint("You don't have any bounty, get to killing")
+        end
+    end
 end
 
 function ENT:OnTakeDamage( dmgInfo )
