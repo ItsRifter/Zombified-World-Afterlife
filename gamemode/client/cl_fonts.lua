@@ -1,3 +1,25 @@
+--TEMPLATE
+--[[
+	surface.CreateFont( "TEMPLATE", {
+		font = "Roboto",
+		extended = false,
+		size = 32,
+		weight = 150,
+		blursize = 0,
+		scanlines = 0,
+		antialias = false,
+		underline = false,
+		italic = false,
+		strikeout = false,
+		symbol = false,
+		rotary = false,
+		shadow = false,
+		additive = false,
+		outline = false,
+	} )
+
+--]]
+
 --HUD Fonts
 surface.CreateFont( "ZWR_HUD_Health", {
 	font = "Roboto",
@@ -7,13 +29,6 @@ surface.CreateFont( "ZWR_HUD_Health", {
 	blursize = 0,
 	scanlines = 0,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
 	outline = true,
 } )
 
@@ -25,13 +40,6 @@ surface.CreateFont( "ZWR_HUD_Stamina", {
 	blursize = 0,
 	scanlines = 0,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
 	outline = true,
 } )
 
@@ -43,13 +51,6 @@ surface.CreateFont( "ZWR_HUD_Faction", {
 	blursize = 0,
 	scanlines = 0,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
 	outline = true,
 } )
 
@@ -62,12 +63,26 @@ surface.CreateFont( "ZWR_QMenu_ButtonText", {
 	blursize = 0,
 	scanlines = 0,
 	antialias = true,
-	underline = false,
-	italic = false,
-	strikeout = false,
-	symbol = false,
-	rotary = false,
-	shadow = false,
-	additive = false,
 	outline = true,
+} )
+
+--Scoreboard
+surface.CreateFont( "ZWR_Scoreboard_Nickname", {
+	font = "Roboto",
+	extended = false,
+	size = 24,
+	weight = 350,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
+surface.CreateFont( "ZWR_Scoreboard_Stats", {
+	font = "Arial",
+	extended = false,
+	size = 20,
+	weight = 250,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
 } )

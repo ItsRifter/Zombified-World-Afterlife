@@ -9,14 +9,22 @@ local function InitData(ply)
     ply.ZWR.Level = ply.ZWR.Level or 0
     ply.ZWR.Money = ply.ZWR.Money or 0
     ply.ZWR.EXP = ply.ZWR.EXP or 0
+	ply.ZWR.ReqEXP = ply.ZWR.ReqEXP or 2500
 
     --Inventory
     ply.ZWR.Inventory = ply.ZWR.Inventory or {}
     
     --Skills
     ply.ZWR.Skills = ply.ZWR.Skills or {}
-end
+	ply.ZWR.SkillPoints = ply.ZWR.SkillPoints or 0
 
+	--Statuses
+	ply.ZWR.Hunger = ply.ZWR.Hunger or 100
+	ply.ZWR.Thirst = ply.ZWR.Thirst or 100
+	ply.ZWR.Infection = ply.ZWR.Infection or 0
+	--Effects is an active effect like bleeding or radiation
+	ply.ZWR.Effects = ply.ZWR.Effects or {}
+end
 
 local function CreateData(ply)
 	local PlayerID = string.Replace(ply:SteamID(), ":", "!")
@@ -27,7 +35,6 @@ local function CreateData(ply)
 	-- Store all persistent data as JSON
 	file.Write("zwr_data/" .. PlayerID .. ".txt", util.TableToJSON(ply.ZWR, true))
 end
-
 
 local function LoadData(ply)
 	local PlayerID = string.Replace(ply:SteamID(), ":", "!")
