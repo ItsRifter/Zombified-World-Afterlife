@@ -6,7 +6,7 @@ ENT.Type = "point"
 ENT.LastZombies = {}
 ENT.SpawnTime = 0
 ENT.TotalZombies = ENT.TotalZombies or 0
-ENT.MaxZombies = 3
+ENT.MaxZombies = 8
 
 
 --Spawns the zombie
@@ -62,7 +62,7 @@ function ENT:Think()
     
     --After the last randomized spawn time is passed and is night time
     --spawn a zombie
-    if self.SpawnTime < CurTime() and isNightTime then
+    if self.SpawnTime < CurTime() and server_isNightTime then
         self:SpawnZombie()
     end
 end

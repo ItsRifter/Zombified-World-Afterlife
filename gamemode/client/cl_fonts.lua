@@ -97,3 +97,34 @@ surface.CreateFont( "ZWR_NPC_Name", {
 	scanlines = 0,
 	antialias = true,
 } )
+
+--Shop
+surface.CreateFont( "ZWR_Shop_CurrentCash", {
+	font = "Roboto",
+	extended = false,
+	size = 32,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
+surface.CreateFont( "ZWR_Shop_Stats_Weapon", {
+	font = "Roboto",
+	extended = false,
+	size = 28,
+	weight = 425,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )
+
+surface.CreateFont( "ZWR_Shop_Stats_Ammo", {
+	font = "Roboto",
+	extended = false,
+	size = 22,
+	weight = 425,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+} )

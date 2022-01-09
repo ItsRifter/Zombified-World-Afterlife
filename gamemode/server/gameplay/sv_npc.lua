@@ -1,13 +1,14 @@
 ZOMBIE_KILL_REWARDS = {
-    ["npc_vj_zss_zombie1"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie2"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie3"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie4"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie5"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie6"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie7"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie8"] = {bMin = 5, bMax = 25},
-    ["npc_vj_zss_zombie9"] = {bMin = 5, bMax = 25},
+    --Basic zombies
+    ["npc_vj_zss_zombie1"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie2"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie3"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie4"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie5"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie6"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie7"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie8"] = {bMin = 25, bMax = 75},
+    ["npc_vj_zss_zombie9"] = {bMin = 25, bMax = 75},
 }
 
 function GM:OnNPCKilled( npc, attacker, inflictor )

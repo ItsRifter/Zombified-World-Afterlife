@@ -5,7 +5,7 @@ include("server/player/sv_progress.lua")
 include("server/filesaving/sv_flatfile.lua")
 include("server/gameplay/sv_daycycle.lua")
 include("server/gameplay/sv_npc.lua")
-include("server/maps/sv_zombiespawns.lua")
+include("server/maps/sv_npcspawnpoints.lua")
 
 --Client files
 AddCSLuaFile("client/hud/cl_hud.lua")
@@ -18,7 +18,6 @@ AddCSLuaFile("client/menus/cl_shopmenu.lua")
 --Shared files
 include("shared/skillbased/sh_playerskills.lua")
 include("shared/database/sh_database.lua")
-include("shared/database/sh_shopdealers.lua")
 include("shared/database/sh_items.lua")
 include("shared/player/sh_inventory.lua")
 
@@ -26,3 +25,8 @@ include("shared/player/sh_inventory.lua")
 util.AddNetworkString("ZWR_BroadcastMessage")
 util.AddNetworkString("ZWR_BroadcastSound")
 util.AddNetworkString("ZWR_OpenShop")
+util.AddNetworkString("ZWR_BuyItem")
+util.AddNetworkString("ZWR_SellItem")
+util.AddNetworkString("ZWR_Inventory_ArrangeItem")
+util.AddNetworkString("ZWR_Inventory_UpdateItem")
+

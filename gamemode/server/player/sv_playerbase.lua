@@ -11,6 +11,30 @@ local flashRate = 0.05
 local flashRegen = 0.025
 local flashDelay = 5
 
+SOUNDS_MALE_HURT = {
+	[1] = "vo/npc/male01/pain01.wav",
+	[2] = "vo/npc/male01/pain02.wav",
+	[3] = "vo/npc/male01/pain03.wav",
+	[4] = "vo/npc/male01/pain04.wav",
+	[5] = "vo/npc/male01/pain05.wav",
+    [6] = "vo/npc/male01/pain06.wav",
+    [7] = "vo/npc/male01/pain07.wav",
+    [8] = "vo/npc/male01/pain08.wav",
+    [9] = "vo/npc/male01/pain09.wav",
+}
+
+SOUNDS_FEMALE_HURT = {
+	[1] = "vo/npc/female01/pain01.wav",
+	[2] = "vo/npc/female01/pain02.wav",
+	[3] = "vo/npc/female01/pain03.wav",
+	[4] = "vo/npc/female01/pain04.wav",
+	[5] = "vo/npc/female01/pain05.wav",
+    [6] = "vo/npc/female01/pain06.wav",
+    [7] = "vo/npc/female01/pain07.wav",
+    [8] = "vo/npc/female01/pain08.wav",
+    [9] = "vo/npc/female01/pain09.wav",
+}
+
 function PlayerSpawn(ply)
     ply.spawnProtection = 10 + CurTime()
     
@@ -181,26 +205,42 @@ hook.Add("Move", "ZWR_Movement", function(ply, mv)
     end	
 end)
 
-SOUNDS_MALE_HURT = {
-	[1] = "vo/npc/male01/pain01.wav",
-	[2] = "vo/npc/male01/pain02.wav",
-	[3] = "vo/npc/male01/pain03.wav",
-	[4] = "vo/npc/male01/pain04.wav",
-	[5] = "vo/npc/male01/pain05.wav",
-    [6] = "vo/npc/male01/pain06.wav",
-    [7] = "vo/npc/male01/pain07.wav",
-    [8] = "vo/npc/male01/pain08.wav",
-    [9] = "vo/npc/male01/pain09.wav",
-}
+net.Receive("ZWR_BuyItem", function(len, ply)
+    if not ply then return end
+    
+    local itemType = net.ReadString()
+    local class = net.ReadString()
+    local name = net.ReadString()
+    if itemType == "weapon" then
+        if ply:HasWeapon( class ) then return end
+        ply:Give(class)
+        ply.ZWR.Money = ply.ZWR.Money - GAMEMODE.DB.Weapons[name].Cost
 
-SOUNDS_FEMALE_HURT = {
-	[1] = "vo/npc/female01/pain01.wav",
-	[2] = "vo/npc/female01/pain02.wav",
-	[3] = "vo/npc/female01/pain03.wav",
-	[4] = "vo/npc/female01/pain04.wav",
-	[5] = "vo/npc/female01/pain05.wav",
-    [6] = "vo/npc/female01/pain06.wav",
-    [7] = "vo/npc/female01/pain07.wav",
-    [8] = "vo/npc/female01/pain08.wav",
-    [9] = "vo/npc/female01/pain09.wav",
-}
+    elseif itemType == "ammo" then
+        ply:GiveAmmo(GAMEMODE.DB.Items[name].StackAmount, GAMEMODE.DB.Items[name].Name, true)
+        ply.ZWR.Money = ply.ZWR.Money - GAMEMODE.DB.Items[name].Cost
+    end
+
+    ply:SetNWInt("ZWR_Cash", ply.ZWR.Money)
+end)
+
+concommand.Add("zwr_giveitem", function(ply, cmd, args)
+    if not ply:IsAdmin() then return end
+    local item, amount, targetply, target = args[1], args[2], ply, args[3]
+	if ply:EntIndex() == 0 and !target then	
+		print("No Target specified. You cannot give items to console!")
+		return
+	end
+	
+	if not item then
+		ply:PrintMessage(HUD_PRINTCONSOLE, "ERROR: No item specified.")
+		return 	
+	end
+
+	if not amount then
+		ply:PrintMessage(HUD_PRINTCONSOLE, "ERROR: No amount specified.")
+		return
+	end
+
+	targetply:AddItem(item, amount)
+end)
