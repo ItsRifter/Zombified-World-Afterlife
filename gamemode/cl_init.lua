@@ -11,5 +11,4 @@ include("client/menus/cl_shopmenu.lua")
 --Shared
 include("shared/database/sh_database.lua")
 include("shared/database/sh_items.lua")
-include("shared/player/sh_inventory.lua")
 include("shared/skillbased/sh_playerskills.lua")

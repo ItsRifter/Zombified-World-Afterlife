@@ -8,7 +8,7 @@ ammo.Cost = 500
 ammo.SellingPrice = 165
 ammo.SizeX = 1
 ammo.SizeY = 1
-ammo.StackAmount = 12
+ammo.StackAmount = 20
 ammo.MaxStacks = 5
 
 CreateItem(ammo)
@@ -38,6 +38,32 @@ ammo.StackAmount = 10
 ammo.MaxStacks = 4
 
 CreateItem(ammo)
+
+local woodMat = {}
+woodMat.Name = "zwr_mat_wood"
+woodMat.DisplayName = "Box of Wood"
+woodMat.Model = "models/Items/item_item_crate.mdl"
+woodMat.Cost = 650
+woodMat.SellingPrice = 250
+woodMat.SizeX = 1
+woodMat.SizeY = 1
+woodMat.StackAmount = 25
+woodMat.MaxStacks = 4
+
+CreateItem(woodMat)
+
+local crowbar = {}
+crowbar.Name = "zwr_weapon_crowbar"
+crowbar.DisplayName = "Crowbar"
+crowbar.Class = "weapon_crowbar"
+crowbar.Model = "models/weapons/w_crowbar.mdl"
+crowbar.AmmoType = nil
+crowbar.Cost = 500
+crowbar.SellingPrice = 250
+crowbar.SizeX = 3
+crowbar.SizeY = 1
+
+CreateWeapon(crowbar)
 
 local glock = {}
 glock.Name = "zwr_weapon_glock"

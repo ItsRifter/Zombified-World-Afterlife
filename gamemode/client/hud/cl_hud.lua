@@ -24,7 +24,7 @@ local client_isNight = client_isNight or false
 
 hook.Add( "HUDPaint", "ZWR_HUDPaint", function()
 	--Faction
-    draw.DrawText("Faction: " .. LocalPlayer():GetNWString("ZWR_Faction", "Loner"), "ZWR_HUD_Faction", 25, ScrH() - 225, Color(255, 255, 255))
+    draw.DrawText("Faction: " .. LocalPlayer():GetNWString("ZWR_Faction", "?"), "ZWR_HUD_Faction", 25, ScrH() - 225, Color(255, 255, 255))
 
 
     --Health

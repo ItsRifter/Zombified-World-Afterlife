@@ -24,6 +24,29 @@ FRIENDLY_SPAWN_MAPS = {
         --TODO: Add weapon + bounty pos and angles
     },
 
+    ["zw_coast_v3"] = {
+        ["weapons"] = {
+            [1] = {
+                ["pos"] = Vector(4952, 3964, 393),
+                ["angle"] = Angle(0, 90, 0)
+            }
+        },
+
+        ["bountyCollection"] = {
+            [1] = {
+                ["pos"] = Vector(4341, 4371, 392),
+                ["angle"] = Angle(0, 0, 0)
+            }
+        },
+
+        ["tools"] = {
+            [1] = {
+                ["pos"] = Vector(4651, 4306, 520),
+                ["angle"] = Angle(0, 0, 0)
+            },
+        },
+    },
+
     ["gm_aftermath_day_v1_0"] = { 
         ["weapons"] = {
             [1] = {
@@ -47,7 +70,7 @@ FRIENDLY_SPAWN_MAPS = {
 }
 
 function SetUpZombieSpawns()
-    if not ZOMBIE_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R SUPPORTED ZOMBIE SPAWNS") return end
+    if not ZOMBIE_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R ZOMBIE SPAWNS") return end
 
     for i = 1, #ZOMBIE_SPAWN_MAPS[game.GetMap()] do
         local spawnpoint = ents.Create("ent_zwr_zombie_spawn")
@@ -57,7 +80,7 @@ function SetUpZombieSpawns()
 end
 
 function SetUpFriendlySpawns()
-    if not FRIENDLY_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R SUPPORTED FRIENDLY SPAWNS") return end
+    if not FRIENDLY_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R FRIENDLY SPAWNS") return end
    
     for i = 1, #FRIENDLY_SPAWN_MAPS[game.GetMap()]["weapons"] do
         local shops = ents.Create("npc_zwr_shop_weapons")
@@ -73,6 +96,12 @@ function SetUpFriendlySpawns()
         bountyPoint:Spawn()
     end
 
+    for i = 1, #FRIENDLY_SPAWN_MAPS[game.GetMap()]["tools"] do
+        local bountyPoint = ents.Create("npc_zwr_shop_tools")
+        bountyPoint:SetPos(FRIENDLY_SPAWN_MAPS[game.GetMap()]["tools"][i]["pos"])
+        bountyPoint:SetAngles(FRIENDLY_SPAWN_MAPS[game.GetMap()]["tools"][i]["angle"])
+        bountyPoint:Spawn()
+    end
 end
 
 function GM:PostCleanupMap()

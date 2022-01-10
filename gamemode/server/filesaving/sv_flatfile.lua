@@ -13,6 +13,7 @@ local function InitData(ply)
 
     --Inventory
     ply.ZWR.Inventory = ply.ZWR.Inventory or {}
+	ply.ZWR.InvMaxSlots = ply.ZWR.InvMaxSlots or 30
     
     --Skills
     ply.ZWR.Skills = ply.ZWR.Skills or {}

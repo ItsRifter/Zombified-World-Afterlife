@@ -42,7 +42,7 @@ concommand.Add("zwr_addxp", function(ply, cmd, args)
     if args[2] then
         for _, v in ipairs(player.GetAll()) do
             if target and string.find(target:Nick(), string.lower(string.sub(v:Nick(), 0, #args[2]))) then
-                ply:ChatPrint("There are multiple users with this name, be more specific if possible")
+                ply:PrintMessage(HUD_PRINTCONSOLE, "There are multiple users with this name, be more specific if possible")
                 return
             end
             
@@ -55,10 +55,12 @@ concommand.Add("zwr_addxp", function(ply, cmd, args)
 	if target then
 		AddXP(target, args[1])
 		target:ChatPrint("You were given " .. args[1] .. "XP by an admin")
-		ply:ChatPrint(args[1] .. "XP given to " .. target:Nick())
+		ply:PrintMessage(HUD_PRINTCONSOLE, args[1] .. "XP given to " .. target:Nick())
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " XP to " .. target:Nick())
     else
-        ply:ChatPrint("You gave yourself " .. args[1] .. " XP")
+        ply:PrintMessage(HUD_PRINTCONSOLE, "You gave yourself " .. args[1] .. " XP")
         AddXP(ply, args[1])
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " XP to self")
     end
 end)
 
@@ -83,10 +85,12 @@ concommand.Add("zwr_addcash", function(ply, cmd, args)
 	if target then
 		AddCash(target, args[1])
 		target:ChatPrint("You were given " .. args[1] .. " Cash by an admin")
-		ply:ChatPrint(args[1] .. " Cash given to " .. target:Nick())
+		ply:PrintMessage(HUD_PRINTCONSOLE, args[1] .. " Cash given to " .. target:Nick())
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " cash to " .. target:Nick())
     else
-        ply:ChatPrint("You gave yourself " .. args[1] .. " Cash")
+        ply:PrintMessage(HUD_PRINTCONSOLE, "You gave yourself " .. args[1] .. " Cash")
         AddCash(ply, args[1])
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " cash to self")
     end
 end)
 
@@ -98,7 +102,7 @@ concommand.Add("zwr_addbounty", function(ply, cmd, args)
     if args[2] then
         for _, v in ipairs(player.GetAll()) do
             if target and string.find(target:Nick(), string.lower(string.sub(v:Nick(), 0, #args[2]))) then
-                ply:ChatPrint("There are multiple users with this name, be more specific if possible")
+                ply:PrintMessage(HUD_PRINTCONSOLE, "There are multiple users with this name, be more specific if possible")
                 return
             end
             
@@ -111,9 +115,11 @@ concommand.Add("zwr_addbounty", function(ply, cmd, args)
 	if target then
 		AddBounty(target, args[1])
 		target:ChatPrint("You were given " .. args[1] .. " Bounty by an admin")
-		ply:ChatPrint(args[1] .. " Bounty given to " .. target:Nick())
+		ply:PrintMessage(HUD_PRINTCONSOLE, args[1] .. " Bounty given to " .. target:Nick())
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " bounty to " .. target:Nick())
     else
-        ply:ChatPrint("You gave yourself " .. args[1] .. " Bounty")
+        ply:PrintMessage(HUD_PRINTCONSOLE, "You gave yourself " .. args[1] .. " Bounty")
         AddBounty(ply, args[1])
+        MsgN(ply:Nick() .. " gave " .. args[1] .. " bounty to self")
     end
 end)

@@ -64,5 +64,7 @@ function ENT:Think()
     --spawn a zombie
     if self.SpawnTime < CurTime() and server_isNightTime then
         self:SpawnZombie()
+    elseif self.SpawnTime < CurTime() and server_isDayTime then
+        table.Empty(self.LastZombies)
     end
 end
