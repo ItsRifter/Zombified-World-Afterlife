@@ -3,9 +3,9 @@ AddCSLuaFile()
 local ammo = {}
 ammo.Name = "zwr_ammo_9mm"
 ammo.DisplayName = "9MM Box"
-ammo.Model = "models/props_lab/box01a.mdl"
-ammo.Cost = 500
-ammo.SellingPrice = 165
+ammo.Model = "models/Items/BoxSRounds.mdl"
+ammo.Cost = 250
+ammo.SellingPrice = 85
 ammo.SizeX = 1
 ammo.SizeY = 1
 ammo.StackAmount = 20
@@ -16,7 +16,7 @@ CreateItem(ammo)
 local ammo = {}
 ammo.Name = "zwr_ammo_762_39mm"
 ammo.DisplayName = "7.62x39mm Box"
-ammo.Model = "models/props_lab/box01a.mdl"
+ammo.Model = "models/Items/BoxMRounds.mdl"
 ammo.Cost = 1500
 ammo.SellingPrice = 625
 ammo.SizeX = 2
@@ -29,7 +29,7 @@ CreateItem(ammo)
 local ammo = {}
 ammo.Name = "zwr_ammo_388_mag"
 ammo.DisplayName = "338 Lapua Magnum Box"
-ammo.Model = "models/props_lab/box01a.mdl"
+ammo.Model = "models/Items/BoxSRounds.mdl"
 ammo.Cost = 2500
 ammo.SellingPrice = 1235
 ammo.SizeX = 2

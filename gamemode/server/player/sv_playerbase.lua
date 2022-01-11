@@ -1,7 +1,7 @@
 --Stamina
-local staminaRate = 0.25
-local staminaRegen = 0.05
-local staminaDelay = 7
+local staminaRate = 0.20
+local staminaRegen = 0.10
+local staminaDelay = 4
 
 --Respawn
 local respawnDelay = 10
@@ -44,6 +44,13 @@ function InitInventory(ply)
 
     if table.IsEmpty(ply.ZWR.Inventory) or not ply.ZWR.Inventory then
         ply.ZWR.Inventory = ply.ZWR.Inventory or {}
+        InventoryGiveItem(ply, "zwr_weapon_crowbar")
+        InventoryGiveItem(ply, "zwr_weapon_glock")
+        for i = 0, 4 do 
+            InventoryRemoveItem(ply, "zwr_ammo_9mm")
+        end
+
+        AddCash(ply, 2500)
     end
 
     net.Start("ZWR_Inventory_Init")
@@ -59,7 +66,7 @@ end
 function InventoryGetItem(ply, className)
     for k, v in pairs(GAMEMODE.DB.Items) do
         if v.Class == className or v.Name == className then
-            return w
+            return v
         end
     end
 
@@ -83,17 +90,25 @@ function InventoryGiveItem(ply, className)
 end
 
 function InventoryRemoveItem(ply, className)
+    local updateClientItem
+   
     for k, v in pairs(GAMEMODE.DB.Items) do
         if v.Name == className then
             table.RemoveByValue(ply.ZWR.Inventory, v)
+            updateClientItem = v.Name
         end
     end
 
     for k, w in pairs(GAMEMODE.DB.Weapons) do
         if w.Name == className then
             table.RemoveByValue(ply.ZWR.Inventory, w)
+            updateClientItem = w.Name
         end
     end
+
+    net.Start("ZWR_Inventory_Refresh_Remove")
+        net.WriteString(updateClientItem)
+    net.Send(ply)
 end
 
 
@@ -161,14 +176,19 @@ concommand.Add("zwr_giveitem", function(ply, cmd, args)
     if not ply:IsAdmin() then return end
     
     local item = InventoryGetItem(ply, args[1])
+    if item == nil then 
+        ply:PrintMessage(HUD_PRINTCONSOLE, "Invalid item")
+        return 
+    end
+
     InventoryGiveItem(ply, item.Name)
 end)
 
 hook.Add("PlayerInitialSpawn", "ZWR_PlayerInitialSpawn", function(ply, transition)
     PlayerSpawn(ply)
-    while InitInventory(ply) == false do
+    timer.Create("ZWR_InitInventory_" .. ply:UserID(), 4, 1, function()
         InitInventory(ply)
-    end
+    end)
 end)
 
 hook.Add("PlayerSpawn", "ZWR_PlayerRespawn", function(ply, transition)
@@ -228,12 +248,22 @@ function GM:PlayerCanPickupWeapon( ply, weapon )
 end
 
 function GM:PlayerUse( ply, ent )
-    if ent:IsNPC() then return end 
-    if InventoryHasItem(ply, ent:GetClass()) then return end
+    if ent:IsNPC() then return end
+    
+    if ent.zwrClass then
+        print(ent.zwrClass)
+        if string.find(ent.zwrClass, "ammo") then
+            InventoryGiveItem(ply, ent.zwrClass)
+            return
+        elseif InventoryHasItem(ply, ent.zwrClass) then 
+            return
+        end
+    end
+
     
     if nextPickup > CurTime() then return end
 
-    InventoryGiveItem(ply, ent:GetClass())
+    InventoryGiveItem(ply, ent.zwrClass)
     nextPickup = pickUpCooldown + CurTime()
     ent:Remove()
 end
@@ -327,10 +357,23 @@ net.Receive("ZWR_Inventory_UseItem", function(len, ply)
     if not ply then return end
     
     local itemType = net.ReadString()
+
     if InventoryHasItem(ply, itemType) then
         local item = InventoryGetItem(ply, itemType)
-        shouldGetWeapons = true
-        ply:Give(item.Class)
+
+        if string.find(itemType, "weapon") then
+            shouldGetWeapons = true
+            ply:Give(item.Class)
+        elseif string.find(itemType, "ammo") then
+            ply:GiveAmmo(item.StackAmount, item.Name, true)
+            InventoryRemoveItem(ply, item.Name)
+
+            net.Start("ZWR_Inventory_Refresh_Remove")
+               net.WriteString(item.Name)
+            net.Send(ply)
+            return
+        end
+
     end
 end)
 
@@ -340,25 +383,41 @@ net.Receive("ZWR_Inventory_DropItem", function(len, ply)
     local itemType = net.ReadString()
 
     if not InventoryHasItem(ply, itemType) then return end
-    if GAMEMODE.DB.Weapons[itemType] then
+    local item = InventoryGetItem(ply, itemType)
 
-        local tr = util.TraceLine({
-            start = ply:EyePos(),
-            endpos = ply:EyePos() + ply:EyeAngles():Forward() * 50,
-            filter = ply,
-        } )
+    local tr = util.TraceLine({
+        start = ply:EyePos(),
+        endpos = ply:EyePos() + ply:EyeAngles():Forward() * 50,
+        filter = ply,
+    } )
 
-        local droppedItem = ents.Create(GAMEMODE.DB.Weapons[itemType].Class)
+    if string.find(item.Name, "weapon") then
+        local droppedWeapon = ents.Create(item.Class)
+        droppedWeapon:SetPos(tr.HitPos)
+        droppedWeapon:SetAngles(Angle(0, 0, 0))
+        droppedWeapon:Spawn()
+        
+        timer.Simple(0.1, function()
+            droppedWeapon.zwrClass = item.Class
+        end)
+
+        if ply:HasWeapon(item.Class) then
+            ply:StripWeapon(item.Class)
+        end
+
+    elseif string.find(item.Name, "ammo") then
+        local droppedItem = ents.Create("prop_physics")
+        droppedItem:SetModel(item.Model)
         droppedItem:SetPos(tr.HitPos)
         droppedItem:SetAngles(Angle(0, 0, 0))
         droppedItem:Spawn()
 
-        if ply:HasWeapon(GAMEMODE.DB.Weapons[itemType].Class) then
-            ply:StripWeapon(GAMEMODE.DB.Weapons[itemType].Class)
-        end
-
-        InventoryRemoveItem(ply, itemType)
+        timer.Simple(0.1, function()
+            droppedItem.zwrClass = item.Class
+        end)
     end
+
+    InventoryRemoveItem(ply, itemType)
 end)
 
 
@@ -371,8 +430,10 @@ net.Receive("ZWR_SellItem", function(len, ply)
         ply.ZWR.Money = ply.ZWR.Money + sellingItem.SellingPrice
         ply:SetNWInt("ZWR_Cash", ply.ZWR.Money)
         
-        if ply:HasWeapon(GAMEMODE.DB.Weapons[itemType].Class) then
-            ply:StripWeapon(GAMEMODE.DB.Weapons[itemType].Class)
+        if string.find(sellingItem.Name, "weapon") then
+            if ply:HasWeapon(sellingItem.Class) then
+                ply:StripWeapon(sellingItem.Class)
+            end
         end
 
         InventoryRemoveItem(ply, itemType)

@@ -284,8 +284,6 @@ function OpenWeaponsShop()
             
             curCash = curCash - w.Cost
             curCashLabel:SetText("Cash: " .. curCash)
-
-            PrintTable(curInvFrame:GetChildren())
         end
     end
 
@@ -343,12 +341,20 @@ end
 
 function OpenToolShop()
     local toolShopFrame = vgui.Create("DFrame")
-    toolShopFrame:SetSize(ScrW() / 1.5, ScrH() / 1.5)
-    toolShopFrame:Center()
+    toolShopFrame:SetSize(775, ScrH() / 1.5)
+    toolShopFrame:SetPos(ScrW() / 1.7, ScrH() / 8)
     toolShopFrame:SetTitle("")
+    toolShopFrame:SetDraggable(false)
     toolShopFrame:MakePopup()
 
     curShopFrame = toolShopFrame
+
+    toolShopFrame.OnClose = function(self)
+        if curInvFrame:IsValid() then
+            curInvFrame:Close()
+            curInvFrame = nil
+        end
+    end
 
     toolShopFrame.Paint = function(self, w, h)
         surface.SetDrawColor(ZWR.Theme.shop.primary)

@@ -6,6 +6,7 @@ include("server/player/sv_player_faction.lua")
 include("server/filesaving/sv_flatfile.lua")
 include("server/gameplay/sv_daycycle.lua")
 include("server/gameplay/sv_npc.lua")
+include("server/gameplay/sv_convars.lua")
 include("server/maps/sv_npcspawnpoints.lua")
 
 --Client files
@@ -40,6 +41,7 @@ util.AddNetworkString("ZWR_Inventory_DropItem_Client")
 util.AddNetworkString("ZWR_Inventory_Init")
 util.AddNetworkString("ZWR_Inventory_ArrangeItem")
 util.AddNetworkString("ZWR_Inventory_UpdateItem")
+util.AddNetworkString("ZWR_Inventory_Refresh_Standard")
 util.AddNetworkString("ZWR_Inventory_Refresh_Remove")
 util.AddNetworkString("ZWR_Inventory_Refresh_Add")
 

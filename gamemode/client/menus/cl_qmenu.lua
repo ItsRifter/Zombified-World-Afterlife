@@ -181,9 +181,6 @@ function QMenu()
                 net.SendToServer()
 
                 table.RemoveByValue(LocalPlayer().zwrInv, itemData.Name)
-
-                QFrame:Remove()
-                clientQMenu = nil
             end
         end
         itemInvModel.DoClick = function(self)
@@ -204,6 +201,93 @@ function QMenu()
             i:SetTall(h * .1)
         end
     end
+
+    net.Receive("ZWR_Inventory_Refresh_Remove", function()
+
+        local clearItem = net.ReadString()
+        for i, c in pairs(LocalPlayer().zwrInv) do
+            if c == clearItem then
+                table.remove(LocalPlayer().zwrInv, i)
+                print(i)
+                break
+            end
+        end
+        
+
+        QInvList:Clear()
+
+        for k, v in pairs(LocalPlayer().zwrInv)do
+            local itemData
+
+            if GAMEMODE.DB.Items[v] then
+                itemData = GAMEMODE.DB.Items[v]
+            elseif GAMEMODE.DB.Weapons[v] then
+                itemData = GAMEMODE.DB.Weapons[v]
+            else continue end
+            
+            local invItem = QInvList:Add("DPanel")
+            invItem:SetSize(64 * itemData.SizeX, 64 * itemData.SizeY)
+            
+            invItem:DockMargin(xPadding, yPadding, 0, 0)
+
+            invItem.Paint = function(self, w, h)
+                surface.SetDrawColor(Color(0, 0, 0, 165))
+                surface.DrawRect(0, 0, w, h)
+                draw.SimpleText(itemData.DisplayName , "ZWR_QMenu_Inventory_Item", w * 0.05, h * .1, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+            end
+
+            QInvScroll.panels[invItem] = true
+
+            local itemInvModel = vgui.Create("DModelPanel", invItem)
+            itemInvModel:SetSize(invItem:GetWide(), invItem:GetTall())
+            itemInvModel:SetModel(itemData.Model)
+            itemInvModel.Entity:SetPos(itemInvModel.Entity:GetPos() - Vector(-15, 10, 4))
+            itemInvModel:SetFOV(50)
+            local num = 0.7
+            local min, max = itemInvModel.Entity:GetRenderBounds()
+            itemInvModel:SetCamPos(min:Distance(max) * Vector(num, num, num))
+            itemInvModel:SetLookAt((max + min) / 2)
+            
+            function itemInvModel:LayoutEntity( ent ) return end
+            
+            local optionIsOpen = false
+
+            local itemOptionBox = vgui.Create( "DComboBox", itemInvModel )
+            itemOptionBox:SetPos(0, invItem:GetTall())
+            itemOptionBox:SetSize( 100, 20 )
+            itemOptionBox:SetValue( "" )
+            itemOptionBox:AddChoice( "Drop" )
+            itemOptionBox:AddChoice( "Use" )
+            itemOptionBox:SetAlpha(0) 
+            
+            itemOptionBox.OnSelect = function( self, index, value )
+                if value == "Use" then
+                    net.Start("ZWR_Inventory_UseItem")
+                        net.WriteString(itemData.Name)
+                    net.SendToServer()
+                end
+
+                if value == "Drop" then
+                    net.Start("ZWR_Inventory_DropItem")
+                        net.WriteString(itemData.Name)
+                    net.SendToServer()
+
+                    table.RemoveByValue(LocalPlayer().zwrInv, itemData.Name)
+                end
+            end
+            itemInvModel.DoClick = function(self)
+                if !optionIsOpen then
+                    optionIsOpen = true
+                    itemOptionBox:SetAlpha(255)
+                    itemOptionBox:OpenMenu()
+                elseif optionIsOpen then
+                    optionIsOpen = false
+                    itemOptionBox:SetAlpha(0)
+                    itemOptionBox:CloseMenu()
+                end
+            end
+        end
+    end)
 
     local skillsPnl = vgui.Create("DPanel", QFrame)
 

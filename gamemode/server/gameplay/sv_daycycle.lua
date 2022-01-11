@@ -7,7 +7,27 @@ server_cycleTime = 0
 server_isDayTime = false
 server_isNightTime = true
 
+local server_shouldSend = true
+
 hook.Add("Think", "ZWR_CycleThink", function()
+    if GetConVar("zwr_cycle_enabled"):GetInt() == 0 then
+        if server_shouldSend then
+            for _, v in ipairs(player.GetAll()) do
+                v:SetNWBool("ZWR_Time_Enable", false)
+            end
+            server_shouldSend = false
+        end
+        return 
+    else
+        if not server_shouldSend then
+            for _, v in ipairs(player.GetAll()) do
+                v:SetNWBool("ZWR_Time_Enable", true)
+            end
+            BeginDayCycle()
+            server_shouldSend = true
+        end
+    end
+    
     if server_cycleTime < CurTime() and server_isDayTime then
         BeginNightCycle()
     elseif server_cycleTime < CurTime() and server_isNightTime then

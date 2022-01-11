@@ -23,7 +23,7 @@ end
 function ENT:Use(activator, caller)
     if lastUse > CurTime() then return end
 
-    lastUse = 3 + CurTime()
+    lastUse = 1 + CurTime()
 
     net.Start("ZWR_OpenShop")
     net.WriteString("weapon")
