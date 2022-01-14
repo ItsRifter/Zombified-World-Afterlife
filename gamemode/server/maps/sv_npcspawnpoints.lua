@@ -4,18 +4,37 @@ ZOMBIE_SPAWN_MAPS = {
         [2] = Vector(33, -4202, 486),
     },
 
-    ["gm_aftermath_day_v1_0"] = {
-        [1] = Vector(764, 1760, 70),
-        [2] = Vector(-363, 3471, 46),
-        [3] = Vector(4997, 11409, 129),
-        [4] = Vector(5649, 11839, 115),
-        [5] = Vector(2068, 9338, 127),
-        [6] = Vector(-6399, 4578, 61),
-        [7] = Vector(-10296, 2301, 143),
-        [8] = Vector(-6845, 13071, 116),
-        [9] = Vector(-8835, 8782, 35),
-        [10] = Vector(6602, 6158, 29),
-        [11] = Vector(7355, 2984, 34),
+    ["gm_aftermath_thelast"] = {
+        --City
+        [1] = Vector(6648, 10755, 130),
+        [2] = Vector(6656, 8639, 105),
+        [3] = Vector(6691, 12801, 101),
+        [4] = Vector(4921, 12799, 117),
+        [5] = Vector(3606, 12802, 119),
+        [6] = Vector(2935, 9729, 123),
+
+        --City: Hospital
+        [7] = Vector(2720, 10365, 117),
+        [8] = Vector(3585, 10762, 112),
+
+        --Rural
+        [9] = Vector(751, 508, 28),
+        [10] = Vector(3035, 1295, 64),
+        [11] = Vector(185, 2631, 49),
+
+        --Tunnels
+        [12] = Vector(4983, 1778, 53),
+        [13] = Vector(5333, 1295, 59),
+
+        --Missile Base
+        [14] = Vector(-9571, 3692, 148),
+        [15] = Vector(-10210, 1992, 136),
+        [16] = Vector(-10498, 1226, 140),
+
+        --Swamp
+        [17] = Vector(-8731, 12052, 91),
+        [18] = Vector(-4936, 10420, 67),    
+        [19] = Vector(-10493, 10905, 84),
     },
 }
 
@@ -47,24 +66,57 @@ FRIENDLY_SPAWN_MAPS = {
         },
     },
 
-    ["gm_aftermath_day_v1_0"] = { 
+    ["gm_aftermath_thelast"] = { 
         ["weapons"] = {
             [1] = {
-                ["pos"] = Vector(-4510, 10398, 63),
-                ["angle"] = Angle(0, 0, 0)
+                ["pos"] = Vector(6611, -419, 57),
+                ["angle"] = Angle(0, 90, 0)
             },
 
             [2] = {
-                ["pos"] = Vector(-8454, 11698, 56),
-                ["angle"] = Angle(0, 180, 0)
+                ["pos"] = Vector(4229, 11552, 131),
+                ["angle"] = Angle(0, 180, 0),
             },
+
+            [3] = {
+                ["pos"] = Vector(-11133, 3614, -12),
+                ["angle"] =  Angle(0, 90, 0)
+            },
+
         },
 
         ["bountyCollection"] = {
             [1] = {
-                ["pos"] = Vector(-4198, 10283, 57),
+                ["pos"] = Vector(6491, -433, 181),
+                ["angle"] = Angle(0, 90, 0)
+            },
+
+            [2] = {
+                ["pos"] = Vector(4255, 9099, 140),
+                ["angle"] = Angle(0, 0, 0)
+            },
+
+            [3] = {
+                ["pos"] = Vector(-10301, 3361, -27),
+                ["angle"] = Angle(0, -90, 0)
+            }
+        },
+
+        ["tools"] = {
+            [1] = {
+                ["pos"] = Vector(6958, -266, 46),
                 ["angle"] = Angle(0, 180, 0)
             },
+
+            [2] = {
+                ["pos"] = Vector(2604, 11360, 244),
+                ["angle"] = Angle(0, 180, 0)
+            },
+
+            [3] = {
+                ["pos"] = Vector(-10249, 2834, -24),
+                ["angle"] = Angle(0, 90, 0)
+            }
         },
     },
 }

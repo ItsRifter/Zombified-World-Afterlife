@@ -60,7 +60,7 @@ function Scoreboard(shouldShow)
 
             local curFaction = vgui.Create("DLabel", playerPnl)
             curFaction:SetPos(0, 50)
-            curFaction:SetText("Faction: " .. LocalPlayer():GetNWString("ZWR_Stat_Faction", "Loner"))
+            curFaction:SetText("Faction: " .. v:GetNWString("ZWR_Faction", "Loner"))
             curFaction:SetFont("ZWR_Scoreboard_Stats")
             curFaction:SizeToContents()
 
@@ -73,7 +73,7 @@ function Scoreboard(shouldShow)
 
         scoreboardPanel = scoreFrame
     else
-        if scoreboardPanel:IsValid() then
+        if scoreboardPanel and scoreboardPanel:IsValid() then
             scoreboardPanel:Close()
             scoreboardPanel = nil
         end

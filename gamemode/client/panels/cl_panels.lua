@@ -17,6 +17,10 @@ ZWR.Theme = {
 		playerPanel = Color(0, 0, 0, 255),
 	},
 
+	factions = {
+		primary = Color(0, 0, 0),
+	},
+
     invSlot = Color(25, 25, 25, 255),
 
     text = {
@@ -148,45 +152,52 @@ AccessorFunc(INV, "m_Color", "Color")
 
 function INV:Init()
     self.m_Coords = {x = 0, y = 0}
-    self:SetSize(60, 60)
+    self:SetSize(64, 64)
     self:SetColor(Color(200, 200, 200))
     self:SetItemPanel(false)
 
-    self:Receiver("invitem", function(pnl, item, drop, i, x, y) --Drag-drop functionality
-	if drop then
-		item = item[1]
-		local x1, y1 = pnl:GetPos()
-		local x2, y2 = item:GetPos()
-		if math.Dist(x1, y1, x2, y2) <= 30 then --Find the top left slot.
-			if not pnl:GetItemPanel() then
+    self:Receiver("zwr_InvItem", function(pnl, item, drop, i, x, y)
+		if drop then
+			item = item[1]
+			
+			local x1, y1 = pnl:GetPos()
+			local x2, y2 = x, y
+			if math.Dist(x1, y1, x2, y2) <= 300 then
+				
 				local itm = item:GetItem()
 				local x, y = pnl:GetCoords()
-				local itmw, itmh = itm:GetSize() --GetSize needs to be a function in your items system.
+				local DBItem
+				if GAMEMODE.DB.Items[itm] then
+					DBItem = GAMEMODE.DB.Items[itm]
+				elseif GAMEMODE.DB.Weapons[itm] then
+					DBItem = GAMEMODE.DB.Weapons[itm]
+				end
+
+				local itmw, itmh = DBItem.SizeX, DBItem.SizeY
 				local full = false
-				for i1 = x, (x + itmw)-1 do
+				for i1 = x, (x + itmw) - 1 do
 					if full then break end
 					for i2 = y, (y + itmh)-1 do
-						if LocalPlayer():GetInvItem(i1,i2):GetItemPanel() then --check if the panels in the area are full.
+						if LocalPlayer():GetInvItem(i1, i2):GetItemPanel() then
 							full = true
 							break
 						end
 					end
 				end
-				if not full then --If none of them are full then
+				if not full then
 					for i1=x, (x+itmw)-1 do
 						for i2=y, (y+itmh)-1 do
-							LocalPlayer():GetInvItem(i1,i2):SetItemPanel(item) -- Tell all the things below it that they are now full of this item.
+							LocalPlayer():GetInvItem(i1,i2):SetItemPanel(DBItem)
+							
 						end
 					end
-					item:SetRoot(pnl) --like a parent, but not a parent.
-					item:SetPos(pnl:GetPos()) --move the item.
+					item:SetParent(pnl)
+					item:SetPos(pnl:GetPos())
 				end
+				
 			end
 		end
-	else
-		--Something about coloring of hovered slots.
-	end
-end, {})
+	end, {})
 end
 
 function INV:SetCoords(x, y)
@@ -199,7 +210,7 @@ function INV:GetCoords()
 end
 
 local col
-function INV:Paint(w,h)
+function INV:Paint(w, h)
      draw.NoTexture()
      col = self:GetColor()
      surface.SetDrawColor(col.r, col.g, col.b, 255)
@@ -213,29 +224,24 @@ vgui.Register("ZWR_InvSlot", INV, "DPanel")
 
 local InvItem = {}
 
-AccessorFunc(PANEL, "m_Item", "Item")
-AccessorFunc(PANEL, "m_Root", "Root")
+AccessorFunc(InvItem, "m_Color", "Color")
+AccessorFunc(InvItem, "m_Item", "Item")
+AccessorFunc(InvItem, "m_Root", "Root")
 
 function InvItem:Init()
-     self:SetSize(60, 60)
-     self:SetItem(false) --false means no item.
-     self:SetColor(Color(100, 100, 100))
-     self:SetDroppable("invitem")
+	self:SetSize(64, 64)
+	self:SetItem(false)
+	self:SetColor(Color(100,100,100))
+	self:Droppable("zwr_InvItem")
 end
 
 function InvItem:PaintOver(w,h)
      draw.NoTexture()
-     if self:GetItem() then
-          surface.SetMaterial(self:GetItem():GetIcon()) --Your items must have a GetIcon method.
-          surface.DrawTexturedRect(0, 0, w, h)
-     end
 end
 
-local col
 function InvItem:Paint(w,h)
      draw.NoTexture()
-     col = self:GetColor()
-     surface.SetDrawColor(col.r, col.g, col.b, 180)
-     surface.DrawRect(0, 0, w, h) --background square
+     surface.SetDrawColor(25, 25, 25, 180)
+     surface.DrawRect(0, 0, w, h)
 end
 vgui.Register("ZWR_InvItem", InvItem, "DPanel")

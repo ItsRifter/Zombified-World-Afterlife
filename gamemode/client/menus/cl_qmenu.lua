@@ -1,6 +1,71 @@
 local clientQMenu = nil
 local lastActive = 1
 
+local plymeta = FindMetaTable("Player")
+
+function plymeta:GetInvItem(x, y)
+    return self.zwrInvSlot[x][y]
+end
+
+CLIENT_FACTIONS = CLIENT_FACTIONS or {}
+
+net.Receive("ZWR_Faction_Create_Server", function()
+    local factionName = net.ReadString()
+    local factionOwner = net.ReadEntity()
+    local inviteOnly = net.ReadBool()
+    //local factionColour = net.ReadTable()
+    local curPlayers = net.ReadTable()
+
+    local updateTBL = {
+        ["name"] = factionName,
+        ["owner"] = factionOwner,
+        ["inviteOnly"] = inviteOnly,
+        //["colour"] = factionColour
+        ["curPlayers"] = curPlayers
+    }
+
+    table.insert(CLIENT_FACTIONS, updateTBL) 
+
+end)
+
+net.Receive("ZWR_Faction_Join_Server", function()
+    local factionName = net.ReadString()
+    local newPlayer = net.ReadEntity()
+    for i, f in pairs(CLIENT_FACTIONS) do
+        if f.name == factionName then
+            table.insert(f.curPlayers, newPlayer)
+            PrintTable(f.curPlayers)
+        end
+    end
+end)
+
+net.Receive("ZWR_Faction_Discard_Server", function()
+    local name = net.ReadString()
+    for i, f in pairs(CLIENT_FACTIONS) do
+        if f.name == name then
+            table.remove(CLIENT_FACTIONS, i)
+        end
+    end
+end)
+
+net.Receive("ZWR_Faction_Leave_Server", function()
+    local name = net.ReadString()
+    local ply = net.ReadEntity()
+
+    for _, f in pairs(CLIENT_FACTIONS) do
+        if f.name == name then
+            for i, p in pairs(f.curPlayers) do
+                print(p:Nick())
+                if p == ply then                
+                    print(table.remove(f.curPlayers, i))
+                    table.remove(f.curPlayers, i)
+                    
+                end
+            end
+        end
+    end
+end)
+
 function QMenuFactionCreation()
     local QFFrame = vgui.Create("DFrame")
     QFFrame:SetTitle("")
@@ -69,11 +134,23 @@ function QMenuFactionCreation()
     end
 
     createBtn.DoClick = function(self)
-        if curName == "" then return end
+        if curName == "" then chat.AddText("Make sure you press enter to apply name") return end
+        if string.len(curName) > 15 then chat.AddText("Name exceeds length limit") return end
+
+        for _, f in pairs(CLIENT_FACTIONS) do
+            if string.find(f.name, curName) then
+                chat.AddText("Your name conflicts with another faction, try a different name")
+                return
+            end
+        end
 
         net.Start("ZWR_Faction_Create")
             net.WriteString(curName)
             net.WriteBool(inviteOnlyTickbox:GetChecked())
+                //Could have used net.WriteColor but can't figure what it wants (even with :GetColor())
+                net.WriteInt(colourFaction:GetColor().r, 32)
+                net.WriteInt(colourFaction:GetColor().g, 32)
+                net.WriteInt(colourFaction:GetColor().b, 32)
         net.SendToServer()
 
         QFFrame:Close()
@@ -106,25 +183,65 @@ function QMenu()
         surface.DrawRect(0, 0, w, h)
     end
 
+    local QItemWidth = 500
+
+    local QItemPnl = vgui.Create("DPanel", QInvPnl)
+    QItemPnl:SetPos(QFrame:GetWide() - QItemWidth, 0)
+    QItemPnl:SetSize(QItemWidth, 550)
+    QItemPnl:SetAlpha(0)
+    QItemPnl.Paint = function(self, w, h)
+        surface.SetDrawColor(Color(50, 50, 50, 255))
+        surface.DrawRect(0, 0, w, h)
+    end
+
+    -- for w, s in pairs(LocalPlayer().zwrInvSlot) do
+    --     for h = 1, LocalPlayer():GetNWInt("ZWR_Inventory_SlotHeight") do
+    --         LocalPlayer().zwrInvSlot[w][h] = vgui.Create("ZWR_InvSlot", QInvPnl)
+    --     end
+    -- end
+
+    local itemScale = 1.25
+
+    local QitemModel = vgui.Create("DModelPanel", QItemPnl)
+    QitemModel:SetSize(500 * itemScale, 100 * itemScale)
+    QitemModel:SetModel("")   
+    function QitemModel:LayoutEntity( ent ) return end
+    
+    local itemName = vgui.Create("DLabel", QItemPnl)
+    itemName:SetText("")
+    itemName:SetFont("ZWR_QMenu_Inventory_Item_Name")
+    itemName:SetPos(0, QItemPnl:GetTall() / 3)
+
+    local itemDesc = vgui.Create("DLabel", QItemPnl)
+    itemDesc:SetText("")
+    itemDesc:SetFont("ZWR_QMenu_Inventory_Item_Desc")
+    itemDesc:SetPos(0, 250)
+    itemDesc:SizeToContents()
+
+    local useBtn = vgui.Create("DButton", QItemPnl)
+    useBtn:SetSize(64, 32)
+    useBtn:SetPos(0, QItemPnl:GetTall() - useBtn:GetTall())
+    useBtn:SetText("Use")
+
+    local dropBtn = vgui.Create("DButton", QItemPnl)
+    dropBtn:SetSize(64, 32)
+    dropBtn:SetPos(QItemPnl:GetWide() - dropBtn:GetWide(), QItemPnl:GetTall() - useBtn:GetTall())
+    dropBtn:SetText("Drop")
+    
     local QInvScroll = vgui.Create("DScrollPanel", QInvPnl)
-    QInvScroll:Dock(FILL)
+    QInvScroll:SetSize(650 * itemScale, 500 * itemScale)
     QInvScroll.panels = {}
 
     local QInvList = vgui.Create("DIconLayout", QInvScroll)
     QInvList:SetPos(0, 50)
-    QInvList:SetSize(1000, 1500)
-    QInvList:SetSpaceX(10)
-    QInvList:SetSpaceY(15)
+    QInvList:SetSize(650, 1250)
+    QInvList:SetSpaceX(1)
+    QInvList:SetSpaceY(1)
 
     local yPadding = ScrH() * 0.001
     local xPadding = ScrW() * 0.001
 
-    if not LocalPlayer().zwrInv then
-        LocalPlayer().zwrInv = {}
-    end
-
-    for k, v in pairs(LocalPlayer().zwrInv)do
-
+    for k, v in pairs(LocalPlayer().zwrInv) do
         local itemData
 
         if GAMEMODE.DB.Items[v] then
@@ -132,7 +249,7 @@ function QMenu()
         elseif GAMEMODE.DB.Weapons[v] then
             itemData = GAMEMODE.DB.Weapons[v]
         else continue end
-        
+
         local invItem = QInvList:Add("DPanel")
         invItem:SetSize(64 * itemData.SizeX, 64 * itemData.SizeY)
         
@@ -145,7 +262,7 @@ function QMenu()
         end
 
         QInvScroll.panels[invItem] = true
-
+        
         local itemInvModel = vgui.Create("DModelPanel", invItem)
         itemInvModel:SetSize(invItem:GetWide(), invItem:GetTall())
         itemInvModel:SetModel(itemData.Model)
@@ -157,45 +274,44 @@ function QMenu()
         itemInvModel:SetLookAt((max + min) / 2)
         
         function itemInvModel:LayoutEntity( ent ) return end
-        
-        local optionIsOpen = false
 
-        local itemOptionBox = vgui.Create( "DComboBox", itemInvModel )
-        itemOptionBox:SetPos(0, invItem:GetTall())
-        itemOptionBox:SetSize( 100, 20 )
-        itemOptionBox:SetValue( "" )
-        itemOptionBox:AddChoice( "Drop" )
-        itemOptionBox:AddChoice( "Use" )
-        itemOptionBox:SetAlpha(0) 
+        itemInvModel.DoClick = function(self)
+            QItemPnl:AlphaTo(255, 0.25, 0, nil)
         
-        itemOptionBox.OnSelect = function( self, index, value )
-            if value == "Use" then
+            itemName:SetText(itemData.DisplayName)
+            itemName:SizeToContents()
+
+            itemDesc:SetText(itemData.Desc)
+            itemDesc:SizeToContents()
+
+            local num = 1.25
+            QitemModel:SetModel(itemData.Model)
+            local min, max = QitemModel.Entity:GetRenderBounds()
+            local pos = min / num + Vector(0, 20, 0)
+            QitemModel.Entity:SetPos(Vector(pos / 4 - Vector(15, 0, 0), pos, pos))
+            QitemModel:SetFOV(50)
+        
+            QitemModel:SetCamPos(Vector(20, 90, 0))
+            QitemModel:SetLookAt(Vector(pos, 0, 0))
+
+            useBtn.DoClick = function(self)
+                QItemPnl:AlphaTo(0, 0.25, 0, nil)
+                QitemModel:SetModel("")
                 net.Start("ZWR_Inventory_UseItem")
                     net.WriteString(itemData.Name)
                 net.SendToServer()
             end
 
-            if value == "Drop" then
+            dropBtn.DoClick = function(self)
+                QItemPnl:AlphaTo(0, 0.25, 0, nil)
+                QitemModel:SetModel("")
                 net.Start("ZWR_Inventory_DropItem")
                     net.WriteString(itemData.Name)
                 net.SendToServer()
-
-                table.RemoveByValue(LocalPlayer().zwrInv, itemData.Name)
-            end
-        end
-        itemInvModel.DoClick = function(self)
-            if !optionIsOpen then
-                optionIsOpen = true
-                itemOptionBox:SetAlpha(255)
-                itemOptionBox:OpenMenu()
-            elseif optionIsOpen then
-                optionIsOpen = false
-                itemOptionBox:SetAlpha(0)
-                itemOptionBox:CloseMenu()
             end
         end
     end
-
+    
     QInvScroll.OnSizeChanged = function(self, w, h)
         for i, v in pairs(self.panels) do
             i:SetTall(h * .1)
@@ -203,20 +319,13 @@ function QMenu()
     end
 
     net.Receive("ZWR_Inventory_Refresh_Remove", function()
-
         local clearItem = net.ReadString()
-        for i, c in pairs(LocalPlayer().zwrInv) do
-            if c == clearItem then
-                table.remove(LocalPlayer().zwrInv, i)
-                print(i)
-                break
-            end
-        end
+        table.RemoveByValue(LocalPlayer().zwrInv, clearItem)
         
-
+        if not clientQMenu or not clientQMenu:IsValid() then return end
         QInvList:Clear()
 
-        for k, v in pairs(LocalPlayer().zwrInv)do
+        for k, v in pairs(LocalPlayer().zwrInv) do
             local itemData
 
             if GAMEMODE.DB.Items[v] then
@@ -224,7 +333,7 @@ function QMenu()
             elseif GAMEMODE.DB.Weapons[v] then
                 itemData = GAMEMODE.DB.Weapons[v]
             else continue end
-            
+
             local invItem = QInvList:Add("DPanel")
             invItem:SetSize(64 * itemData.SizeX, 64 * itemData.SizeY)
             
@@ -237,7 +346,7 @@ function QMenu()
             end
 
             QInvScroll.panels[invItem] = true
-
+            
             local itemInvModel = vgui.Create("DModelPanel", invItem)
             itemInvModel:SetSize(invItem:GetWide(), invItem:GetTall())
             itemInvModel:SetModel(itemData.Model)
@@ -249,41 +358,40 @@ function QMenu()
             itemInvModel:SetLookAt((max + min) / 2)
             
             function itemInvModel:LayoutEntity( ent ) return end
-            
-            local optionIsOpen = false
 
-            local itemOptionBox = vgui.Create( "DComboBox", itemInvModel )
-            itemOptionBox:SetPos(0, invItem:GetTall())
-            itemOptionBox:SetSize( 100, 20 )
-            itemOptionBox:SetValue( "" )
-            itemOptionBox:AddChoice( "Drop" )
-            itemOptionBox:AddChoice( "Use" )
-            itemOptionBox:SetAlpha(0) 
+            itemInvModel.DoClick = function(self)
+                QItemPnl:AlphaTo(255, 0.25, 0, nil)
             
-            itemOptionBox.OnSelect = function( self, index, value )
-                if value == "Use" then
+                itemName:SetText(itemData.DisplayName)
+                itemName:SizeToContents()
+
+                itemDesc:SetText(itemData.Desc)
+                itemDesc:SizeToContents()
+
+                local num = 1.25
+                QitemModel:SetModel(itemData.Model)
+                local min, max = QitemModel.Entity:GetRenderBounds()
+                local pos = min / num + Vector(0, 20, 0)
+                QitemModel.Entity:SetPos(Vector(pos / 4 - Vector(15, 0, 0), pos, pos))
+                QitemModel:SetFOV(50)
+            
+                QitemModel:SetCamPos(Vector(20, 90, 0))
+                QitemModel:SetLookAt(Vector(pos, 0, 0))
+
+                useBtn.DoClick = function(self)
+                    QItemPnl:AlphaTo(0, 0.25, 0, nil)
+                    QitemModel:SetModel("")
                     net.Start("ZWR_Inventory_UseItem")
                         net.WriteString(itemData.Name)
                     net.SendToServer()
                 end
 
-                if value == "Drop" then
+                dropBtn.DoClick = function(self)
+                    QItemPnl:AlphaTo(0, 0.25, 0, nil)
+                    QitemModel:SetModel("")
                     net.Start("ZWR_Inventory_DropItem")
                         net.WriteString(itemData.Name)
                     net.SendToServer()
-
-                    table.RemoveByValue(LocalPlayer().zwrInv, itemData.Name)
-                end
-            end
-            itemInvModel.DoClick = function(self)
-                if !optionIsOpen then
-                    optionIsOpen = true
-                    itemOptionBox:SetAlpha(255)
-                    itemOptionBox:OpenMenu()
-                elseif optionIsOpen then
-                    optionIsOpen = false
-                    itemOptionBox:SetAlpha(0)
-                    itemOptionBox:CloseMenu()
                 end
             end
         end
@@ -312,13 +420,111 @@ function QMenu()
         surface.DrawRect(0, 0, w, h)
     end
 
+    local factionList = vgui.Create("DIconLayout", factionsPnl)
+    factionList:SetPos(0, 50)
+    factionList:SetSize(750, 1250)
+    factionList:SetSpaceX(1)
+    factionList:SetSpaceY(1)
+
+    for i, f in pairs(CLIENT_FACTIONS) do
+        if not f.owner:IsValid() then continue end
+        local factionPnl = vgui.Create("DPanel", factionList)
+        factionPnl:SetSize(300, 150)
+
+        factionPnl.Paint = function(self, w, h)
+            surface.SetDrawColor(ZWR.Theme.factions.primary)
+            surface.DrawRect(0, 0, w, h)
+        end
+
+        local factionName = vgui.Create("DLabel", factionPnl)
+        factionName:SetText("Faction: " .. f.name)
+        factionName:SetFont("ZWR_QMenu_Factions_Name")
+        factionName:SetPos(0, 0)
+        factionName:SizeToContents()
+
+        local factionOwnerName = vgui.Create("DLabel", factionPnl)
+        factionOwnerName:SetText("Owner: " .. f.owner:Nick())
+        factionOwnerName:SetFont("ZWR_QMenu_Factions_Name")
+        factionOwnerName:SetPos(0, 25)
+        factionOwnerName:SizeToContents()
+        
+        local curPlayerLabel = vgui.Create("DLabel", factionPnl)
+        curPlayerLabel:SetText("Size: " .. #f.curPlayers)
+        curPlayerLabel:SetFont("ZWR_QMenu_Factions_Name")
+        curPlayerLabel:SetPos(0, 50)
+        curPlayerLabel:SizeToContents()
+
+        local joinFactionBtn = vgui.Create("DButton", factionPnl)
+        joinFactionBtn:SetSize(72, 48)
+        joinFactionBtn:SetPos(0, factionPnl:GetTall() - joinFactionBtn:GetTall())
+        joinFactionBtn:SetText("Join")
+
+        joinFactionBtn.DoClick = function(self)
+            if f.inviteOnly then
+                chat.AddText("That faction is set to invite only, ask the owner to invite you")
+                return
+            end
+
+            if LocalPlayer():GetNWString("ZWR_Faction") == f.name then
+                chat.AddText("You are already part of this faction")
+                return
+            end
+
+            if LocalPlayer():GetNWString("ZWR_Faction", "Loner") ~= "Loner" then
+                chat.AddText("You are currently part of a faction, leave it before joining another")
+                return
+            end
+
+            net.Start("ZWR_Faction_Join")
+                net.WriteString(f.name)
+            net.SendToServer()
+
+            clientQMenu:Remove()
+            clientQMenu = nil
+        end
+
+        local ownerModel = vgui.Create("SpawnIcon", factionPnl)
+        ownerModel:SetModel(f.owner:GetModel())
+        ownerModel:SetPos(factionPnl:GetWide() - ownerModel:GetWide(), factionPnl:GetTall() - ownerModel:GetTall())
+    end
+
     local createFactionBtn = vgui.Create("DButton", factionsPnl)
     createFactionBtn:SetText("Create Faction")
     createFactionBtn:SetSize(128, 64)
-    createFactionBtn:SetPos(factionsPnl:GetWide() - 128, 0)
+    createFactionBtn:SetPos(factionsPnl:GetWide() - createFactionBtn:GetWide(), 0)
 
     createFactionBtn.DoClick = function(pnl)
-        QMenuFactionCreation()
+        if LocalPlayer():GetNWString("ZWR_Faction", "Loner") == "Loner" then
+            QMenuFactionCreation()
+        end
+    end
+
+    if LocalPlayer():GetNWString("ZWR_Faction", "Loner") ~= "Loner" then
+        local leaveFactionBtn = vgui.Create("DButton", factionsPnl)
+        leaveFactionBtn:SetText("Leave Faction")
+        leaveFactionBtn:SetSize(128, 64)
+        leaveFactionBtn:SetPos(factionsPnl:GetWide() - leaveFactionBtn:GetWide(), factionsPnl:GetTall() - (leaveFactionBtn:GetTall() + 52))
+
+        leaveFactionBtn.DoClick = function(pnl)
+            local isOwnerOfFaction = nil
+            for _, f in pairs(CLIENT_FACTIONS) do
+                if LocalPlayer() == f.owner then
+                    isOwnerOfFaction = f
+                end
+            end
+
+            if isOwnerOfFaction then
+                net.Start("ZWR_Faction_Discard")
+                net.WriteString(isOwnerOfFaction.name)
+                net.SendToServer()
+            else
+                net.Start("ZWR_Faction_Leave")
+                net.SendToServer()
+            end
+
+            clientQMenu:Remove()
+            clientQMenu = nil
+        end
     end
 
     QFrame.navbar:AddTab("Inventory", QInvPnl)
@@ -328,8 +534,88 @@ function QMenu()
     QFrame.navbar:SetActive(lastActive)
 end
 
+function IsRoomFor(item)
+	for k,v in pairs(LocalPlayer().zwrInvSlot) do
+		for k2, pnl in pairs(LocalPlayer().zwrInvSlot[k]) do
+			if not pnl:GetItemPanel() then
+				local x, y = pnl:GetCoords()
+                
+                local DBItem
+                if GAMEMODE.DB.Items[item] then
+                    DBItem = GAMEMODE.DB.Items[item]
+                elseif GAMEMODE.DB.Weapons[item] then
+                    DBItem = GAMEMODE.DB.Weapons[item]
+                else continue end
+
+				local itmw, itmh = DBItem.SizeX, DBItem.SizeY
+				local full = false
+
+				for i1 = x, (x + itmw) - 1 do
+					if full then break end
+					for i2 = y, (y + itmh) - 1 do
+						if LocalPlayer():GetInvItem(i1, i2) then --check if the panels in the area are full.
+							full = true
+							break
+						end
+					end
+				end
+				if full then
+					return pnl --If there's room then return the open panel.
+				end
+			end
+		end
+	end
+	return false --if not, then return false.
+end
+
+function AddItem(item, invPnl)
+	local place = IsRoomFor(item)
+	if place then
+		
+		local itm = vgui.Create("ZWR_InvItem", invPnl)
+		itm:SetItem(item)
+		itm:SetPos(place:GetPos())
+
+		local x, y = place:GetCoords()
+
+		local DBItem
+        if GAMEMODE.DB.Items[item] then
+            DBItem = GAMEMODE.DB.Items[item]
+        elseif GAMEMODE.DB.Weapons[item] then
+            DBItem = GAMEMODE.DB.Weapons[item]
+        end
+
+        local itmw, itmh = DBItem.SizeX, DBItem.SizeY
+
+		for i1 = x, (x + itmw) - 1 do
+			for i2 = y, (y + itmh) - 1 do
+				LocalPlayer():GetInvItem(i1,i2):SetItemPanel(DBItem)
+			end
+		end
+		
+		return true
+		
+	else
+		return false
+	end
+end
+
 net.Receive("ZWR_Inventory_Init", function()
+    local widthSlots = net.ReadInt(32)
+    local heightSlots = net.ReadInt(32)
+    
     LocalPlayer().zwrInv = {}
+    LocalPlayer().zwrInvSlot = {}
+
+    for i = 1, widthSlots do
+        LocalPlayer().zwrInvSlot[i] = {} 
+    end
+
+    for k, v in pairs(LocalPlayer().zwrInv)do
+        for i = 1, heightSlots do
+            LocalPlayer().zwrInvSlot[k][i] = false 
+        end
+    end
 end)
 
 net.Receive("ZWR_Inventory_UpdateItem", function()

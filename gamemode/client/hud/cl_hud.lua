@@ -72,9 +72,9 @@ hook.Add( "HUDPaint", "ZWR_HUDPaint", function()
     --Time
     if LocalPlayer():GetNWBool("ZWR_Time_Enable", false) then
         if not LocalPlayer():GetNWBool("ZWR_Time_IsInvasion") then
-            draw.DrawText("Time until Invasion: " .. string.FormattedTime( LocalPlayer():GetNWInt("ZWR_Time") - CurTime(), "%02i:%02i" ), "ZWR_HUD_Faction", ScrW() / 1.25, ScrH() - 50, Color(255, 255, 255))
+            draw.DrawText("Time until Invasion: " .. string.FormattedTime( LocalPlayer():GetNWInt("ZWR_Time") - CurTime(), "%02i:%02i" ), "ZWR_HUD_Faction", ScrW() / 1.25 - 25, ScrH() - 50, Color(255, 255, 255))
         elseif LocalPlayer():GetNWBool("ZWR_Time_IsInvasion") then
-            draw.DrawText("Invasion Time left: " .. string.FormattedTime( LocalPlayer():GetNWInt("ZWR_Time") - CurTime(), "%02i:%02i" ), "ZWR_HUD_Faction", ScrW() / 1.235, ScrH() - 50, Color(255, 255, 255))
+            draw.DrawText("Invasion Time left: " .. string.FormattedTime( LocalPlayer():GetNWInt("ZWR_Time") - CurTime(), "%02i:%02i" ), "ZWR_HUD_Faction", ScrW() / 1.235 - 25, ScrH() - 50, Color(255, 255, 255))
         end
     end
     --Nearby friendly NPCs

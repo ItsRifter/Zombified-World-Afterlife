@@ -3,12 +3,17 @@ AddCSLuaFile()
 ENT.Base = "base_entity"
 ENT.Type = "ai"
 ENT.Model = "models/player/odessa.mdl"
-ENT.PrintName = "Bobby Jr (Bounty Collector)"
+ENT.PotentialNames = {
+    [1] = "Bobby Jr",
+    [2] = "Jospeh",
+    [3] = "William"
+}
 
 local lastUse = 0
 
 function ENT:Initialize()
     self:SetModel(self.Model)
+    self.PrintName = self.PotentialNames[math.random(1, #self.PotentialNames)] .. " (Bounty Collector)"
     
     if SERVER then
         self:SetActivity(ACT_IDLE)

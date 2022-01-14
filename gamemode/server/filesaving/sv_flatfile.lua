@@ -13,7 +13,9 @@ local function InitData(ply)
 
     --Inventory
     ply.ZWR.Inventory = ply.ZWR.Inventory or {}
-	ply.ZWR.InvMaxSlots = ply.ZWR.InvMaxSlots or 30
+	ply.ZWR.InvMaxSlotsWidth = ply.ZWR.InvMaxSlotsWidth or 5
+	ply.ZWR.InvMaxSlotsHeight = ply.ZWR.InvMaxSlotsHeight or 6
+
     
     --Skills
     ply.ZWR.Skills = ply.ZWR.Skills or {}
@@ -73,6 +75,17 @@ end)
 --When the player disconnects, save their data
 hook.Add("PlayerDisconnected", "HL2CR_SavePlayerDataDisconnect", function(ply) 
 	SavePlayerData(ply)
+
+	for i, f in pairs(CURRENT_FACTIONS) do
+		print(f.owner)
+		if ply == f.owner then
+			net.Start("ZWR_Faction_Discard_Server")
+				net.WriteString(f.name)
+			net.Broadcast()
+
+			table.remove(CURRENT_FACTIONS, i)
+		end
+	end
 end)
 
 --Upon a map change or server shutdown, save everyones progress
@@ -92,6 +105,7 @@ hook.Add("PlayerInitialSpawn", "HL2CR_NewPlayerCheck", function(ply)
 	--If its a new player, create a save file for saving (and ensuring the player isn't a bot)
 	if not LoadData(ply) and not ply:IsBot() then
 		CreateData(ply)
+		NewPlayerInventory(ply)
 		return
 	end
 	

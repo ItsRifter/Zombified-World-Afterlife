@@ -47,8 +47,18 @@ util.AddNetworkString("ZWR_Inventory_Refresh_Add")
 
 --Faction
 util.AddNetworkString("ZWR_Faction_Create")
+util.AddNetworkString("ZWR_Faction_Create_Server")
 util.AddNetworkString("ZWR_Faction_Join")
+util.AddNetworkString("ZWR_Faction_Join_Server")
 util.AddNetworkString("ZWR_Faction_Discard")
+util.AddNetworkString("ZWR_Faction_Discard_Server")
+util.AddNetworkString("ZWR_Faction_Update")
 util.AddNetworkString("ZWR_Faction_Leave")
+util.AddNetworkString("ZWR_Faction_Leave_Server")
 util.AddNetworkString("ZWR_Faction_Invited")
 
+concommand.Add("zwr_resetcraft", function(ply)
+    if not ply:IsSuperAdmin() then return end
+    
+    JMod.InitGlobalConfig(true)
+end)

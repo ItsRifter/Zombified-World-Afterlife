@@ -3,12 +3,18 @@ AddCSLuaFile()
 ENT.Base = "base_entity"
 ENT.Type = "ai"
 ENT.Model = "models/player/odessa.mdl"
-ENT.PrintName = "Johnny (Tools Dealer)"
+
+ENT.PotentialNames = {
+    [1] = "Richard",
+    [2] = "Adam",
+    [3] = "Bill"
+}
 
 local lastUse = 0
 
 function ENT:Initialize()
     self:SetModel(self.Model)
+    self.PrintName = self.PotentialNames[math.random(1, #self.PotentialNames)] .. " (Tools Dealer)"
     
     if SERVER then
         self:SetActivity(ACT_IDLE)

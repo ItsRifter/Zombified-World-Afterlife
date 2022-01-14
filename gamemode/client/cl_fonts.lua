@@ -87,11 +87,53 @@ surface.CreateFont( "ZWR_QMenu_Factions_Preview", {
 	outline = true,
 } )
 
+surface.CreateFont( "ZWR_QMenu_Factions_Name", {
+	font = "Roboto",
+	extended = false,
+	size = 26,
+	weight = 0,
+	blursize = 0,
+	scanlines = 0,
+	outline = true,
+} )
+
+surface.CreateFont( "ZWR_QMenu_Factions_JoinLeave", {
+	font = "Roboto",
+	extended = false,
+	size = 18,
+	weight = 250,
+	blursize = 0,
+	scanlines = 0,
+	outline = true,
+} )
+
 surface.CreateFont( "ZWR_QMenu_Inventory_Item", {
 	font = "Roboto",
 	extended = false,
 	size = 22,
 	weight = 250,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+	outline = true,
+} )
+
+surface.CreateFont( "ZWR_QMenu_Inventory_Item_Name", {
+	font = "Roboto",
+	extended = false,
+	size = 32,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+	outline = true,
+} )
+
+surface.CreateFont( "ZWR_QMenu_Inventory_Item_Desc", {
+	font = "Arial",
+	extended = false,
+	size = 22,
+	weight = 500,
 	blursize = 0,
 	scanlines = 0,
 	antialias = true,
