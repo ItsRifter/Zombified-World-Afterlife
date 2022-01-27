@@ -7,8 +7,10 @@ include("client/cl_fonts.lua")
 include("client/panels/cl_panels.lua")
 include("client/menus/cl_qmenu.lua")
 include("client/menus/cl_shopmenu.lua")
+include("client/menus/cl_basebuilding.lua")
 
 --Shared
 include("shared/database/sh_database.lua")
 include("shared/database/sh_items.lua")
 include("shared/skillbased/sh_playerskills.lua")
+include("shared/database/sh_buildings.lua")

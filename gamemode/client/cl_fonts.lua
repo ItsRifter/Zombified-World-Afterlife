@@ -107,6 +107,29 @@ surface.CreateFont( "ZWR_QMenu_Factions_JoinLeave", {
 	outline = true,
 } )
 
+--Building Menu
+surface.CreateFont( "ZWR_QMenu_Faction_BuildDesc", {
+	font = "Roboto",
+	extended = false,
+	size = 26,
+	weight = 500,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+	outline = true,
+} )
+
+surface.CreateFont( "ZWR_QMenu_Faction_SelectBuild", {
+	font = "Roboto",
+	extended = false,
+	size = 16,
+	weight = 100,
+	blursize = 0,
+	scanlines = 0,
+	antialias = true,
+	outline = true,
+} )
+
 surface.CreateFont( "ZWR_QMenu_Inventory_Item", {
 	font = "Roboto",
 	extended = false,

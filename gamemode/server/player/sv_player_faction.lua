@@ -26,6 +26,7 @@ function CreateFaction(ply, name, inviteOnly, colour)
     net.Broadcast()
 
     ply:Give("weapon_zwr_builder")
+    ply:Give("weapon_zwr_deconstructor")
 end
 
 net.Receive("ZWR_Faction_Discard", function(len, ply)
@@ -46,6 +47,7 @@ net.Receive("ZWR_Faction_Discard", function(len, ply)
     net.Broadcast()
 
     ply:StripWeapon("weapon_zwr_builder")
+    ply:StripWeapon("weapon_zwr_deconstructor")
 end)
 
 net.Receive("ZWR_Faction_Create", function(len, ply)

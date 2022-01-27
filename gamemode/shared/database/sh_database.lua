@@ -7,6 +7,7 @@ GM.DB.Skills = {}
 GM.DB.Quests = {}
 GM.DB.Shops = {}
 GM.DB.CraftRecipes = {}
+GM.DB.Buildings = {}
 
 function CreateItem(newItem)
 	GM.DB.Items[newItem.Name] = newItem
@@ -30,6 +31,10 @@ end
 
 function CreateRecipe(newRecipe)
     GM.DB.CraftRecipes[newRecipe.Name] = newRecipe
+end
+
+function CreateBuilding(newBuilding)
+    GM.DB.Buildings[newBuilding.Name] = newBuilding
 end
 
 GM.DefaultModels = {}

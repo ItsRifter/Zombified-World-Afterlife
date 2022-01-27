@@ -57,6 +57,7 @@ woodMat.Name = "zwr_mat_wood"
 woodMat.DisplayName = "Box of Wood"
 woodMat.Desc = "A box containing wood"
 woodMat.Model = "models/Items/item_item_crate.mdl"
+woodMat.Class = "ent_jack_gmod_ezwood"
 woodMat.Cost = 650
 woodMat.SellingPrice = 250
 woodMat.SizeX = 1

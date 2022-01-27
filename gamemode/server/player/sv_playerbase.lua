@@ -4,7 +4,7 @@ local staminaRegen = 0.20
 local staminaDelay = 4
 
 --Respawn
-local respawnDelay = 15
+local respawnDelay = 10
 
 --Flashlight
 local flashRate = 0.025
@@ -116,15 +116,17 @@ function InventoryRemoveItem(ply, className)
     net.Send(ply)
 end
 
-
+--Inventory check, if the player has the item then return true else false
 function InventoryHasItem(ply, className) 
     
+    --Checks for each item in inventory, both name and class
     for k, v in pairs(GAMEMODE.DB.Items) do
         if v.Name == className then
             return true
         end
     end
 
+    --Same as above but for weapons
     for k, w in pairs(GAMEMODE.DB.Weapons) do
         if w.Name == className or w.Class == className then
             return true
@@ -153,7 +155,9 @@ function PlayerSpawn(ply)
         ["curPlayers"] = nil
     }
 
+    --Give default weapons
     ply:Give("wep_jack_gmod_hands")
+    ply:Give("weapon_physcannon")
 
     --Network statuses
     ply:SetNWInt("ZWR_Stat_Stamina", ply.playerStamina)
@@ -162,8 +166,6 @@ function PlayerSpawn(ply)
     --Network Time
     ply:SetNWInt("ZWR_Time", server_cycleTime)
     ply:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
-
-    //ply:Give("weapon_fists")
 
     --Network the statistics if its a player
     if not ply:IsBot() then
@@ -284,6 +286,13 @@ function GM:PlayerHurt(victim, attacker, healthRemaining, damageTaken)
         return
     end
     
+    --If the player is too low of a level, don't allow them to be damaged
+    if victim.ZWR.Level < 5 and victim:GetNWString("ZWR_Faction") ~= "Loner" and attacker:IsPlayer() then 
+        attacker:ChatPrint("That player is under 'Newbie Protection'")
+        victim:SetHealth(victim:GetMaxHealth())
+        return
+    end
+
     --Play hurt sounds
     if string.find(victim:GetModel(), "male") then
         victim:EmitSound(SOUNDS_MALE_HURT[math.random(1, #SOUNDS_MALE_HURT)])
@@ -302,19 +311,22 @@ function GM:PlayerDeathThink( ply )
     return false
 end
 
+--Disable standard picking up items
 function GM:PlayerCanPickupItem( ply, item )
     return false
 end
 
+--Surpasses the check in PlayerCanPickupWeapon so players can pick up without checking inventory
 local SURPASS_CHECK = {
     ["weapon_physcannon"] = true,
     ["wep_jack_gmod_ezmedkit"] = true,
     ["wep_jack_gmod_hands"] = true,
     ["weapon_zwr_builder"] = true,
+    ["weapon_zwr_deconstructor"] = true
 }
 
 function GM:PlayerCanPickupWeapon( ply, weapon )
-    print(weapon:GetClass())
+
     if SURPASS_CHECK[weapon:GetClass()] then 
         return true
     end
@@ -461,6 +473,12 @@ net.Receive("ZWR_Inventory_DropItem", function(len, ply)
     elseif string.find(item.Name, "ammo") then
         local droppedItem = ents.Create("ent_zwr_item")
         droppedItem.ClassName = item.Class
+        droppedItem:SetModel(item.Model)
+        droppedItem:SetPos(tr.HitPos)
+        droppedItem:SetAngles(Angle(0, 0, 0))
+        droppedItem:Spawn()
+    elseif string.find(item.Name, "mat") then
+        local droppedItem = ents.Create(item.Class)
         droppedItem:SetModel(item.Model)
         droppedItem:SetPos(tr.HitPos)
         droppedItem:SetAngles(Angle(0, 0, 0))

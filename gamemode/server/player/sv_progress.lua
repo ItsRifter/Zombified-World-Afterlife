@@ -39,6 +39,7 @@ concommand.Add("zwr_addxp", function(ply, cmd, args)
 	
 	local target = nil
 
+    --Checks for a 2nd argument and existing player with name (along with checks for multiple names)
     if args[2] then
         for _, v in ipairs(player.GetAll()) do
             if target and string.find(target:Nick(), string.lower(string.sub(v:Nick(), 0, #args[2]))) then
@@ -62,6 +63,13 @@ concommand.Add("zwr_addxp", function(ply, cmd, args)
         AddXP(ply, args[1])
         MsgN(ply:Nick() .. " gave " .. args[1] .. " XP to self")
     end
+end)
+
+--DEBUG: prints current and required XP of the player
+concommand.Add("zwr_printxp", function(ply)
+    if not ply:IsAdmin() then return end
+
+    ply:PrintMessage(HUD_PRINTCONSOLE, "XP/ReqXP: " .. ply.ZWR.EXP .. "/" .. ply.ZWR.ReqEXP)
 end)
 
 concommand.Add("zwr_addcash", function(ply, cmd, args)

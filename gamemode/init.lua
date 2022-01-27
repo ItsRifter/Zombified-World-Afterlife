@@ -16,11 +16,13 @@ AddCSLuaFile("client/cl_fonts.lua")
 AddCSLuaFile("client/panels/cl_panels.lua")
 AddCSLuaFile("client/menus/cl_qmenu.lua")
 AddCSLuaFile("client/menus/cl_shopmenu.lua")
+AddCSLuaFile("client/menus/cl_basebuilding.lua")
 
 --Shared files
 include("shared/skillbased/sh_playerskills.lua")
 include("shared/database/sh_database.lua")
 include("shared/database/sh_items.lua")
+include("shared/database/sh_buildings.lua")
 
 --Network
 util.AddNetworkString("ZWR_BroadcastMessage")
@@ -57,6 +59,11 @@ util.AddNetworkString("ZWR_Faction_Leave")
 util.AddNetworkString("ZWR_Faction_Leave_Server")
 util.AddNetworkString("ZWR_Faction_Invited")
 
+--Faction base related 
+util.AddNetworkString("ZWR_FactionBase_InvestFunds")
+util.AddNetworkString("ZWR_FactionBase_InvestFunds_Server")
+
+--TEMPORARY, will remove once JMOD is supported with ZW:R
 concommand.Add("zwr_resetcraft", function(ply)
     if not ply:IsSuperAdmin() then return end
     
