@@ -168,26 +168,37 @@ function PlayerSpawn(ply)
     ply:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
 
     --Network the statistics if its a player
-    if not ply:IsBot() then
+    if not ply:IsBot() and GAMEMODE.MYSQL.Data.Type == "txt" then
         ply:SetModel(ply.ZWR.Model)
 
         ply:SetNWInt("ZWR_Level", ply.ZWR.Level)
         ply:SetNWInt("ZWR_XP", ply.ZWR.EXP)
         ply:SetNWInt("ZWR_ReqXP", ply.ZWR.ReqEXP)
         ply:SetNWInt("ZWR_SkillPoints", ply.ZWR.SkillPoints)
-
         ply:SetNWInt("ZWR_Cash", ply.ZWR.Money)
-        ply:SetNWInt("ZWR_Bounty", ply.curBounty)
+    end
 
-        ply:SetNWString("ZWR_Faction", ply.faction.name)
-        if GetConVar("zwr_cycle_enabled"):GetInt() == 1 then
-            ply:SetNWBool("ZWR_Time_Enable", true)
-        else
-            ply:SetNWBool("ZWR_Time_Enable", false)
-        end
+    ply:SetNWInt("ZWR_Bounty", ply.curBounty)
+    
+    ply:SetNWString("ZWR_Faction", ply.faction.name)
 
+    if GetConVar("zwr_cycle_enabled"):GetInt() == 1 then
+        ply:SetNWBool("ZWR_Time_Enable", true)
+    else
+        ply:SetNWBool("ZWR_Time_Enable", false)
     end
 end
+
+--DEBUG PURPOSES: testing save and loading files from mysql
+concommand.Add("zwr_newsave", function(ply)
+    if not ply:IsAdmin() then return end
+    ply:NewSave()
+end)
+
+concommand.Add("zwr_loadsave", function(ply)
+    if not ply:IsAdmin() then return end
+    SaveSystem:LoadPlayerData(ply)
+end)
 
 concommand.Add("zwr_reloadinv", function(ply)
     if not ply:IsAdmin() then return end
@@ -251,8 +262,10 @@ end)
 hook.Add("PlayerInitialSpawn", "ZWR_PlayerInitialSpawn", function(ply, transition)
     PlayerSpawn(ply)
     timer.Create("ZWR_InitInventory_" .. ply:UserID(), 4, 1, function()
-        InitInventory(ply)
-
+        if GAMEMODE.MYSQL.Data.Type == "txt" then
+            InitInventory(ply)
+        end
+        
         for i, f in pairs(CURRENT_FACTIONS) do
             net.Start("ZWR_Faction_Create_Server")
                 net.WriteString(f.name)
@@ -341,7 +354,6 @@ end
 
 
 function GM:PlayerUse( ply, ent )
-
     if not ent.ClassName or not InventoryGetItem(ply, ent.ClassName) then return end
 
     if ply.nextPickup and ply.nextPickup > CurTime() then return end
@@ -438,6 +450,7 @@ net.Receive("ZWR_Inventory_UseItem", function(len, ply)
         local item = InventoryGetItem(ply, itemType)
 
         if item.OnUse then
+            print("Using")
             item.OnUse(ply)
         end
     end

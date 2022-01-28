@@ -124,10 +124,14 @@ surface.CreateFont( "ZWR_QMenu_Faction_SelectBuild", {
 	extended = false,
 	size = 16,
 	weight = 100,
-	blursize = 0,
-	scanlines = 0,
 	antialias = true,
 	outline = true,
+} )
+
+surface.CreateFont( "ZWR_QMenu_Faction_BuildOwner", {
+	font = "Arial",
+	size = 14,
+	weight = 500,
 } )
 
 surface.CreateFont( "ZWR_QMenu_Inventory_Item", {

@@ -41,16 +41,24 @@ function SWEP:PrimaryAttack()
     if self.NextBuild > CurTime() then return end
     if self.Owner.HoloBuild == nil or not self.Owner.HoloBuild:IsValid() then return end
     
+    local tempCheck
+
+    for _, t in pairs(GAMEMODE.DB.Buildings) do
+        if t.Model == self.Owner.HoloBuild:GetModel() then
+            tempCheck = t
+        end
+    end
+
     for i, b in pairs(self.Owner.Buildings) do
         if not self.Owner.Buildings[i] then continue end
-        if self.Owner.Buildings[i] == self.Owner.HoloBuild:GetClass() then
+        if self.Owner.Buildings[i] == tempCheck.Class then
             if not self.Owner.TotalBuilding then
                 self.Owner.TotalBuilding = 1
             end
 
             self.Owner.TotalBuilding = self.Owner.TotalBuilding + 1
 
-            if self.Owner.TotalBuilding >= self.Owner.HoloBuild.BuildMaxCount then 
+            if self.Owner.TotalBuilding >= tempCheck.MaxLimit then 
                 self.Owner:ChatPrint("You have exceeded the max limit for this building")
                 self.Owner.TotalBuilding = nil
                 self.NextBuild = self.Delay + CurTime()
@@ -78,16 +86,21 @@ function SWEP:PrimaryAttack()
     elseif cosine < 0.7071067812 then
         return
     elseif self:InWallOrNearProp() then 
-        return 
+        return
+    elseif tr.HitNormal.z ~= 1 then
+        return
     end
 
-    local building = ents.Create(self.Owner.HoloBuild:GetClass())
+    local building = ents.Create(self.Owner.HoloBuild.Class)
     building:SetPos(tr.HitPos)
     building:Spawn()
 
-    building.FactionLeader = self.Owner
+    timer.Simple(0.1, function()
+        building:AssignLeader(self.Owner)
+        building:BeginTimer()
+    end)
 
-    table.insert(self.Owner.Buildings, self.Owner.HoloBuild:GetClass())
+    table.insert(self.Owner.Buildings, self.Owner.HoloBuild.Class)
 
     self.Owner.HoloBuild:Remove()
     self.Owner:EmitSound("buttons/lever" .. math.random(3, 6) .. ".wav")
@@ -126,7 +139,7 @@ function SWEP:SecondaryAttack()
             surface.SetDrawColor(Color(0, 0, 0, 255))
             surface.DrawRect(0, 0, w, h)
         end
-
+        
         local bModel = vgui.Create("DModelPanel", bPanel)
         bModel:SetModel(building.Model)
         bModel:SetSize(bPanel:GetWide() / 2, bPanel:GetTall())
@@ -155,13 +168,32 @@ function SWEP:SecondaryAttack()
     curFrame = buildingsFrame
 end
 
+net.Receive("ZWR_Builder_Update", function(len, ply)
+    if not ply then return end
+
+    local holoClass = net.ReadString()
+    local newBuild = ents.Create(holoClass)
+
+    ply:SetNWEntity("ZWR_Temp_Building", newBuild)
+end)
+
 function SWEP:Think()
-    net.Receive("ZWR_Builder_Update", function()
-        local holoClass = net.ReadString()
-        self.Owner.HoloBuild = ents.Create(holoClass)
-        self:DrawPreviewModel()
-        print("Works")
-    end)
+
+    if self.Owner:GetNWEntity("ZWR_Temp_Building"):IsValid() then
+        timer.Simple(0.1, function()
+            if self.Owner.HoloBuild and self.Owner.HoloBuild:IsValid() then return end
+            self.Owner.HoloBuild = ents.Create("ent_zwr_faction_ghostbuild")
+            self.Owner.HoloBuild.Class = self.Owner:GetNWEntity("ZWR_Temp_Building"):GetClass()
+            
+            for _, m in pairs(GAMEMODE.DB.Buildings) do
+                if m.Class == self.Owner.HoloBuild.Class then
+                    self.Owner.HoloBuild:SetModel(m.Model)
+                end
+            end
+
+            self.Owner.HoloBuild:SetMaterial("models/wireframe")
+        end)
+    end
 
     if self.Owner.HoloBuild == nil or not self.Owner.HoloBuild:IsValid() then return end
     self:DrawPreviewModel()
@@ -177,7 +209,10 @@ function SWEP:Holster()
     return true
 end
 
-function SWEP:DrawPreviewModel()
+function SWEP:DrawPreviewModel() 
+
+    self.Owner:SetNWEntity("ZWR_Temp_Building", nil)
+
     local tr = util.TraceLine({
         start = self.Owner:EyePos(),
         endpos = self.Owner:EyePos() + self.Owner:EyeAngles():Forward() * self.BuildRange,
@@ -197,7 +232,7 @@ function SWEP:DrawPreviewModel()
     if tr.Hit and tr.HitWorld and tr.HitNormal.z ~= 1 then
         tr.HitPos = tr.HitPos + tr.HitNormal * self.Owner.HoloBuild:BoundingRadius() / 2
     end
-    
+
     if self.Owner.HoloBuild and self.Owner.HoloBuild:IsValid() then
         if not tr.Hit then
             self.Owner.HoloBuild:SetColor(Color(255, 0, 0))
@@ -206,6 +241,8 @@ function SWEP:DrawPreviewModel()
         elseif cosine < 0.7071067812 then
             self.Owner.HoloBuild:SetColor(Color(255, 0, 0))
         elseif self:InWallOrNearProp() then
+            self.Owner.HoloBuild:SetColor(Color(255, 0, 0))
+        elseif tr.HitNormal.z ~= 1 then
             self.Owner.HoloBuild:SetColor(Color(255, 0, 0))
         else
             self.Owner.HoloBuild:SetColor(Color(0, 255, 0))

@@ -4,6 +4,7 @@ include("server/player/sv_playerbase.lua")
 include("server/player/sv_progress.lua")
 include("server/player/sv_player_faction.lua")
 include("server/filesaving/sv_flatfile.lua")
+include("server/filesaving/sql/sv_sql_database.lua")
 include("server/gameplay/sv_daycycle.lua")
 include("server/gameplay/sv_npc.lua")
 include("server/gameplay/sv_convars.lua")
@@ -19,6 +20,7 @@ AddCSLuaFile("client/menus/cl_shopmenu.lua")
 AddCSLuaFile("client/menus/cl_basebuilding.lua")
 
 --Shared files
+include("shared/sh_sql_config.lua")
 include("shared/skillbased/sh_playerskills.lua")
 include("shared/database/sh_database.lua")
 include("shared/database/sh_items.lua")
@@ -69,3 +71,8 @@ concommand.Add("zwr_resetcraft", function(ply)
     
     JMod.InitGlobalConfig(true)
 end)
+
+hook.Add( "Initialize", "ZWR_SaveModuleLoader", function()
+	if GAMEMODE.MYSQL.Data.Type == "txt" then return end
+    SaveSystem:Initialize()
+end )

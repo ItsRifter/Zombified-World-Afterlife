@@ -21,34 +21,60 @@ ENT.BuildMaxCount = 1
 ENT.BaseRingRadius = 250
 ENT.CurTier = 0
 
+ENT.Delay = 1
+ENT.NextOpenMenu = 0
+
 function ENT:Initialize()
     if CLIENT then return end
     self:SetModel(self.Model)
     self:PhysicsInit(SOLID_VPHYSICS)
     self:GetPhysicsObject():EnableMotion(false)
-    self:BeginTimer()
+end
+
+function ENT:AssignLeader(ply)
+    self.FactionLeader = ply
+    self:SetNWString("ZWR_Base_LeaderName", self.FactionLeader:Nick())
 end
 
 function ENT:BeginTimer()
     self.TimeUntilUpgrade = self.TimeToUpgrade + CurTime()
 end
 
-function ENT:OnUse(activator, caller)
-    print("Used")
-    -- Player check and if they are on the same faction as the leader
-    if activator:IsPlayer() then
-        if not activator:GetNWString("ZWR_Faction") == FactionLeader:GetNWString("ZWR_Faction") then return end
-    else return end
-
-    net.Start("ZWR_FactionBase_InvestFunds_Server")
-        net.WriteInt(self.Invested, 32)
-        net.WriteInt(self.UpgradeReq, 32)
-    net.Send(activator)
+function ENT:Upgrade()
+    self.CurTier = self.CurTier + 1
+    self.Invested = 0
+    self.UpgradeReq = math.Round(self.UpgradeReq * 2.5)
 end
 
-function ENT:Upgrade()
-    if self.TimeUntilUpgrade > CurTime() then return end
+function ENT:Think()
+    if self.TimeUntilUpgrade < CurTime() and self.Invested >= self.UpgradeReq then
+        self:Upgrade()
+    end
+end
 
-    self.CurTier = self.CurTier + 1
-    self.UpgradeReq = math.Round(self.UpgradeReq * 2.5)
+if CLIENT then
+    function ENT:Draw()
+        self:DrawModel()
+
+        cam.Start3D2D(self:GetPos() - Vector(-38, -21, -30), Angle(0, 180, 90), 0.5)
+        
+            surface.SetDrawColor(Color(100, 100, 100))
+            surface.DrawRect(25, -50, 100, 50)
+            
+            surface.SetFont( "ZWR_QMenu_Faction_BuildOwner" )
+            surface.SetTextColor( 255, 255, 255 )
+            surface.SetTextPos( 25, -50 ) 
+            surface.DrawText(self:GetNWString("ZWR_Base_LeaderName") .. "'s Base")
+            
+            surface.SetTextColor( 190, 0, 0)
+            surface.SetTextPos( 25, -35 ) 
+            surface.DrawText("Health: " .. self.BaseHealth)
+            
+            surface.SetTextColor( 255, 255, 255)
+            surface.SetTextPos( 25, -15 ) 
+            surface.DrawText("Tier: " .. self.CurTier)
+            
+        cam.End3D2D()
+
+    end
 end

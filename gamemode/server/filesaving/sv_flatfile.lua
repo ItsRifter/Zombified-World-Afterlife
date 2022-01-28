@@ -16,12 +16,12 @@ local function InitData(ply)
 	ply.ZWR.InvMaxSlotsWidth = ply.ZWR.InvMaxSlotsWidth or 5
 	ply.ZWR.InvMaxSlotsHeight = ply.ZWR.InvMaxSlotsHeight or 6
 
-    
     --Skills
     ply.ZWR.Skills = ply.ZWR.Skills or {}
 	ply.ZWR.SkillPoints = ply.ZWR.SkillPoints or 0
 
 	--Statuses
+	ply.ZWR.LastHealth = ply.ZWR.LastHealth or 100
 	ply.ZWR.Hunger = ply.ZWR.Hunger or 100
 	ply.ZWR.Thirst = ply.ZWR.Thirst or 100
 	ply.ZWR.Infection = ply.ZWR.Infection or 0
@@ -64,8 +64,10 @@ local function SavePlayerData(ply)
 	
 end
 
---If there isn't a HL2CR data folder, create one
+--If there isn't a ZWR data folder, create one
 hook.Add("Initialize", "CreateDataFolder", function()
+	if GAMEMODE.MYSQL.Data.Type ~= "txt" then return end
+	
 	if not file.IsDir( "zwr_data", "DATA") then
 		print("MISSING ZW:R FOLDER: Making new one")
 		file.CreateDir("zwr_data", "DATA")
@@ -73,11 +75,12 @@ hook.Add("Initialize", "CreateDataFolder", function()
 end)
 
 --When the player disconnects, save their data
-hook.Add("PlayerDisconnected", "HL2CR_SavePlayerDataDisconnect", function(ply) 
-	SavePlayerData(ply)
+hook.Add("PlayerDisconnected", "ZWR_SavePlayerDataDisconnect", function(ply) 
+	if GAMEMODE.MYSQL.Data.Type == "txt" then
+		SavePlayerData(ply)
+	end
 
 	for i, f in pairs(CURRENT_FACTIONS) do
-		print(f.owner)
 		if ply == f.owner then
 			net.Start("ZWR_Faction_Discard_Server")
 				net.WriteString(f.name)
@@ -89,18 +92,31 @@ hook.Add("PlayerDisconnected", "HL2CR_SavePlayerDataDisconnect", function(ply)
 end)
 
 --Upon a map change or server shutdown, save everyones progress
-hook.Add( "ShutDown", "HL2CR_MapChangeSave", function() 
+hook.Add( "ShutDown", "ZWR_MapChangeSave", function()
+	--If we aren't using TXT format saving, stop here
+	if GAMEMODE.MYSQL.Data.Type ~= "txt" then return end
+
 	for _, ply in ipairs( player.GetAll() ) do
 		SavePlayerData(ply)
 	end
 end)
 
-hook.Add("PlayerInitialSpawn", "HL2CR_NewPlayerCheck", function(ply)
+hook.Add("PlayerAuthed", "ZWR_PlayerAuth", function(ply, steamid, uniqueid)
+	--If the save format isn't set to MySQL, stop here
+	if GAMEMODE.MYSQL.Data.Type ~= "mysql" then return end
+
+	SaveSystem:LoadPlayerData(ply)
+
+end)
+
+hook.Add("PlayerInitialSpawn", "ZWR_NewPlayerCheck", function(ply)
 	--If the player is a bot, set model to kleiner and stop there
 	if ply:IsBot() then
 		ply:SetModel("models/player/kleiner.mdl")
 		return
 	end
+
+	if GAMEMODE.MYSQL.Data.Type ~= "txt" then return end
 
 	--If its a new player, create a save file for saving (and ensuring the player isn't a bot)
 	if not LoadData(ply) and not ply:IsBot() then
