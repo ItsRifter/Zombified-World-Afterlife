@@ -66,7 +66,7 @@ function Scoreboard(shouldShow)
 
             local level = vgui.Create("DLabel", playerPnl)
             level:SetPos(0, 75)
-            level:SetText("level: " ..  v:GetNWInt("ZWR_Level", -1))
+            level:SetText("Level: " ..  v:GetNWInt("ZWR_Level", -1))
             level:SetFont("ZWR_Scoreboard_Stats")
 
         end

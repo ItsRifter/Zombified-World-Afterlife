@@ -6,9 +6,20 @@ base.Desc = "The heart of your faction"
 base.Model = "models/props_trainstation/trainstation_ornament001.mdl"
 base.Class = "ent_zwr_faction_base"
 base.Cost = 5000
+base.AdjustZPos = 0
 base.SellingPrice = 3000
 base.MaxLimit = 1
 CreateBuilding(base)
+
+local station = {}
+station.Name = "Workbench"
+station.Desc = "Do it yourself with this workbench"
+station.Model = "models/mosi/fallout4/furniture/workstations/weaponworkbench01.mdl"
+station.Class = "ent_jack_gmod_ezworkbench"
+station.Cost = 3500
+station.SellingPrice = 1500
+station.MaxLimit = 2
+CreateBuilding(station)
 
 local fridge = {}
 fridge.Name = "Fridge"
@@ -16,6 +27,7 @@ fridge.Desc = "Stores and keeps food fresh"
 fridge.Model = "models/props_c17/FurnitureFridge001a.mdl"
 fridge.Class = "ent_zwr_faction_fridge"
 fridge.Cost = 3000
+fridge.AdjustZPos = 40
 fridge.SellingPrice = 1000
 fridge.MaxLimit = 3
 CreateBuilding(fridge)

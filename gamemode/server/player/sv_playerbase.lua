@@ -40,24 +40,27 @@ SOUNDS_FEMALE_HURT = {
 }
 
 function NewPlayerInventory(ply)
-    if ply.ZWR.Inventory then
-        InventoryGiveItem(ply, "zwr_weapon_crowbar")
-        InventoryGiveItem(ply, "zwr_weapon_glock")
-        for i = 1, 4 do 
-            InventoryGiveItem(ply, "zwr_ammo_9mm")
-        end
-
-        AddCash(ply, 2500)
+    InventoryGiveItem(ply, "zwr_weapon_crowbar")
+    InventoryGiveItem(ply, "zwr_weapon_glock")
+    for i = 1, 4 do 
+        InventoryGiveItem(ply, "zwr_ammo_9mm")
     end
+
+    AddCash(ply, 2500)
 end
 
 function InitInventory(ply)
 
-    ply:SetNWInt("ZWR_Inventory_SlotWidth", ply.ZWR.InvMaxSlotsWidth)
-    ply:SetNWInt("ZWR_Inventory_SlotHeight", ply.ZWR.InvMaxSlotsHeight)
-
     net.Start("ZWR_Inventory_Init")
     net.Send(ply)
+    
+    ply.ZWR = ply.ZWR or {} 
+    ply.ZWR.Inventory = ply.ZWR.Inventory or {}
+
+    if GAMEMODE.MYSQL.Data.Type ~= "txt" then return end
+
+    ply:SetNWInt("ZWR_Inventory_SlotWidth", ply.ZWR.InvMaxSlotsWidth)
+    ply:SetNWInt("ZWR_Inventory_SlotHeight", ply.ZWR.InvMaxSlotsHeight)
         
     for i, v in pairs(ply.ZWR.Inventory) do
         net.Start("ZWR_Inventory_UpdateItem")
@@ -84,13 +87,14 @@ end
 
 function InventoryGiveItem(ply, className)
     local item = InventoryGetItem(ply, className)
-
     if item ~= nil then
         table.insert(ply.ZWR.Inventory, item)
 
         net.Start("ZWR_Inventory_UpdateItem")
             net.WriteString(item.Name)
         net.Send(ply)
+
+        ply:SaveFile( "Inventory", item.Name )
     end
 end
 
@@ -110,6 +114,8 @@ function InventoryRemoveItem(ply, className)
             table.RemoveByValue(ply.ZWR.Inventory, w)
         end
     end
+
+    ply:SaveFile( "Inventory", updateClientItem )
 
     net.Start("ZWR_Inventory_Refresh_Remove")
         net.WriteString(updateClientItem)
@@ -167,13 +173,13 @@ function PlayerSpawn(ply)
     ply:SetNWInt("ZWR_Time", server_cycleTime)
     ply:SetNWBool("ZWR_Time_IsInvasion", server_isNightTime)
 
-    --Network the statistics if its a player
+    --Network the statistics if its a player and saving type is TXT
     if not ply:IsBot() and GAMEMODE.MYSQL.Data.Type == "txt" then
         ply:SetModel(ply.ZWR.Model)
 
         ply:SetNWInt("ZWR_Level", ply.ZWR.Level)
         ply:SetNWInt("ZWR_XP", ply.ZWR.EXP)
-        ply:SetNWInt("ZWR_ReqXP", ply.ZWR.ReqEXP)
+        ply:SetNWInt("ZWR_ReqXP", ply.ZWR.ReqExp)
         ply:SetNWInt("ZWR_SkillPoints", ply.ZWR.SkillPoints)
         ply:SetNWInt("ZWR_Cash", ply.ZWR.Money)
     end
@@ -189,15 +195,43 @@ function PlayerSpawn(ply)
     end
 end
 
+--MySQL data loading after auth check
+hook.Add("PlayerAuthed", "ZWR_PlayerAuth", function(ply, steamid, uniqueid)
+	--If the save format isn't set to MySQL, stop here
+	if GAMEMODE.MYSQL.Data.Type ~= "mysql" then return end
+	
+	timer.Simple(1, function()
+		ply:LoadSave()
+	end)
+
+    PlayerSpawn(ply)
+	InitInventory(ply)
+end)
+
+
 --DEBUG PURPOSES: testing save and loading files from mysql
 concommand.Add("zwr_newsave", function(ply)
     if not ply:IsAdmin() then return end
     ply:NewSave()
 end)
 
+concommand.Add("zwr_fixsave", function(ply)
+    if not ply:IsAdmin() then return end
+    SaveSystem:Initialize()
+end)
+
+concommand.Add("zwr_commitsave", function(ply)
+    if not ply:IsAdmin() then return end
+    
+    --if ply:IsDoingSave() then ply:PrintMessage(HUD_PRINTCONSOLE, "Currently saving, please wait") return end
+
+    --SaveSystem:CommitPlayerDiffs( ply:SteamID64(), function( bErr ) end )
+    ply:CommitSaveFile()
+end)
+
 concommand.Add("zwr_loadsave", function(ply)
     if not ply:IsAdmin() then return end
-    SaveSystem:LoadPlayerData(ply)
+    ply:LoadSave()
 end)
 
 concommand.Add("zwr_reloadinv", function(ply)
@@ -260,11 +294,11 @@ concommand.Add("zwr_giveitem", function(ply, cmd, args)
 end)
 
 hook.Add("PlayerInitialSpawn", "ZWR_PlayerInitialSpawn", function(ply, transition)
+    if GAMEMODE.MYSQL.Data.Type == "mysql" then return end
+    
     PlayerSpawn(ply)
     timer.Create("ZWR_InitInventory_" .. ply:UserID(), 4, 1, function()
-        if GAMEMODE.MYSQL.Data.Type == "txt" then
-            InitInventory(ply)
-        end
+        InitInventory(ply)
         
         for i, f in pairs(CURRENT_FACTIONS) do
             net.Start("ZWR_Faction_Create_Server")
@@ -425,7 +459,6 @@ end)
 
 --Handles Movement
 hook.Add("Move", "ZWR_Movement", function(ply, mv)
-
     mv:SetMaxClientSpeed( 150 )
 
     --If sprinting and stamina is sufficent, increase the speed 
@@ -450,8 +483,9 @@ net.Receive("ZWR_Inventory_UseItem", function(len, ply)
         local item = InventoryGetItem(ply, itemType)
 
         if item.OnUse then
-            print("Using")
             item.OnUse(ply)
+            
+            ply:SaveFile( "Inventory", item.Name )
         end
     end
 end)

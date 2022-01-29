@@ -2,8 +2,7 @@ AddCSLuaFile()
 
 ENT.Base = "base_anim"
 ENT.Type = "anim"
-ENT.PrintName = "Faction "
-ENT.ClassName = ""
+ENT.PrintName = "Faction Base"
 
 ENT.BaseHealth = 5000
 ENT.TimeUntilUpgrade = 0
@@ -31,11 +30,6 @@ function ENT:Initialize()
     self:GetPhysicsObject():EnableMotion(false)
 end
 
-function ENT:AssignLeader(ply)
-    self.FactionLeader = ply
-    self:SetNWString("ZWR_Base_LeaderName", self.FactionLeader:Nick())
-end
-
 function ENT:BeginTimer()
     self.TimeUntilUpgrade = self.TimeToUpgrade + CurTime()
 end
@@ -55,7 +49,7 @@ end
 if CLIENT then
     function ENT:Draw()
         self:DrawModel()
-
+        if not self:GetNWEntity("ZWR_Base_Leader") or not self:GetNWEntity("ZWR_Base_Leader"):IsValid() then return end
         cam.Start3D2D(self:GetPos() - Vector(-38, -21, -30), Angle(0, 180, 90), 0.5)
         
             surface.SetDrawColor(Color(100, 100, 100))
@@ -64,7 +58,7 @@ if CLIENT then
             surface.SetFont( "ZWR_QMenu_Faction_BuildOwner" )
             surface.SetTextColor( 255, 255, 255 )
             surface.SetTextPos( 25, -50 ) 
-            surface.DrawText(self:GetNWString("ZWR_Base_LeaderName") .. "'s Base")
+            surface.DrawText(self:GetNWEntity("ZWR_Base_Leader"):Nick() .. "'s Base")
             
             surface.SetTextColor( 190, 0, 0)
             surface.SetTextPos( 25, -35 ) 

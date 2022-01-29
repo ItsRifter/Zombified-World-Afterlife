@@ -6,7 +6,7 @@ function AddXP(ply, amt)
 
     --In case an admin gives too much exp to the player (or self)
     --While the players exp is over the required amount, increase their statistics
-    while ply.ZWR.EXP >= ply.ZWR.ReqEXP do
+    while ply.ZWR.EXP >= ply.ZWR.ReqExp do
         ply.ZWR.EXP = ply.ZWR.EXP - ply.ZWR.ReqExp
 		ply.ZWR.Level = ply.ZWR.Level + 1
 		ply.ZWR.SkillPoints = ply.ZWR.SkillPoints + 1
@@ -19,9 +19,12 @@ function AddXP(ply, amt)
 		ply:SetNWInt("ZWR_SkillPoints", ply.ZWR.SkillPoints)
 		ply:SetNWInt("ZWR_Level", ply.ZWR.Level)
 		ply:SetNWInt("ZWR_ReqXP", ply.ZWR.ReqExp)
+        ply:SaveFile( "Level" )
+        ply:SaveFile( "ReqExp" )
     end
 
     ply:SetNWInt("ZWR_XP", ply.ZWR.EXP)
+    ply:SaveFile( "EXP" )
 end
 
 function AddCash(ply, amt)
@@ -66,10 +69,11 @@ concommand.Add("zwr_addxp", function(ply, cmd, args)
 end)
 
 --DEBUG: prints current and required XP of the player
-concommand.Add("zwr_printxp", function(ply)
+concommand.Add("zwr_printstats", function(ply)
     if not ply:IsAdmin() then return end
 
-    ply:PrintMessage(HUD_PRINTCONSOLE, "XP/ReqXP: " .. ply.ZWR.EXP .. "/" .. ply.ZWR.ReqEXP)
+    ply:PrintMessage(HUD_PRINTCONSOLE, "Level: " .. ply.ZWR.Level)
+    ply:PrintMessage(HUD_PRINTCONSOLE, "XP/ReqXP: " .. ply.ZWR.EXP .. "/" .. ply.ZWR.ReqExp)
 end)
 
 concommand.Add("zwr_addcash", function(ply, cmd, args)

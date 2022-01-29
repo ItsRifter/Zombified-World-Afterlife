@@ -9,7 +9,7 @@ local function InitData(ply)
     ply.ZWR.Level = ply.ZWR.Level or 0
     ply.ZWR.Money = ply.ZWR.Money or 0
     ply.ZWR.EXP = ply.ZWR.EXP or 0
-	ply.ZWR.ReqEXP = ply.ZWR.ReqEXP or 2500
+	ply.ZWR.ReqExp = ply.ZWR.ReqExp or 2500
 
     --Inventory
     ply.ZWR.Inventory = ply.ZWR.Inventory or {}
@@ -101,13 +101,6 @@ hook.Add( "ShutDown", "ZWR_MapChangeSave", function()
 	end
 end)
 
-hook.Add("PlayerAuthed", "ZWR_PlayerAuth", function(ply, steamid, uniqueid)
-	--If the save format isn't set to MySQL, stop here
-	if GAMEMODE.MYSQL.Data.Type ~= "mysql" then return end
-
-	SaveSystem:LoadPlayerData(ply)
-
-end)
 
 hook.Add("PlayerInitialSpawn", "ZWR_NewPlayerCheck", function(ply)
 	--If the player is a bot, set model to kleiner and stop there

@@ -122,7 +122,7 @@ FRIENDLY_SPAWN_MAPS = {
 }
 
 function SetUpZombieSpawns()
-    if not ZOMBIE_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R ZOMBIE SPAWNS") return end
+    if not ZOMBIE_SPAWN_MAPS[game.GetMap()] then ErrorNoHalt("THIS MAP DOESN'T HAVE ZW:R ZOMBIE SPAWNS\n") return end
 
     for i = 1, #ZOMBIE_SPAWN_MAPS[game.GetMap()] do
         local spawnpoint = ents.Create("ent_zwr_zombie_spawn")
@@ -132,7 +132,7 @@ function SetUpZombieSpawns()
 end
 
 function SetUpFriendlySpawns()
-    if not FRIENDLY_SPAWN_MAPS[game.GetMap()] then print("THIS MAP DOESN'T HAVE ZW:R FRIENDLY SPAWNS") return end
+    if not FRIENDLY_SPAWN_MAPS[game.GetMap()] then ErrorNoHalt("THIS MAP DOESN'T HAVE ZW:R FRIENDLY SPAWNS\n") return end
    
     for i = 1, #FRIENDLY_SPAWN_MAPS[game.GetMap()]["weapons"] do
         local shops = ents.Create("npc_zwr_shop_weapons")

@@ -303,6 +303,7 @@ function QMenu()
             end
 
             dropBtn.DoClick = function(self)
+                if not QitemModel:GetModel() then return end
                 QItemPnl:AlphaTo(0, 0.25, 0, nil)
                 QitemModel:SetModel("")
                 net.Start("ZWR_Inventory_DropItem")
@@ -387,6 +388,7 @@ function QMenu()
                 end
 
                 dropBtn.DoClick = function(self)
+                    if not QitemModel:GetModel() then return end
                     QItemPnl:AlphaTo(0, 0.25, 0, nil)
                     QitemModel:SetModel("")
                     net.Start("ZWR_Inventory_DropItem")
@@ -601,12 +603,14 @@ function AddItem(item, invPnl)
 end
 
 net.Receive("ZWR_Inventory_Init", function()
-    local widthSlots = net.ReadInt(32)
-    local heightSlots = net.ReadInt(32)
+
+    --TEMPORARY
+    local widthSlots = 5
+    local heightSlots = 6
     
     LocalPlayer().zwrInv = {}
     LocalPlayer().zwrInvSlot = {}
-
+    --[[
     for i = 1, widthSlots do
         LocalPlayer().zwrInvSlot[i] = {} 
     end
@@ -616,6 +620,7 @@ net.Receive("ZWR_Inventory_Init", function()
             LocalPlayer().zwrInvSlot[k][i] = false 
         end
     end
+    --]]
 end)
 
 net.Receive("ZWR_Inventory_UpdateItem", function()

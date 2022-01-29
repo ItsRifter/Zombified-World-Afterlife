@@ -33,8 +33,24 @@ SWEP.Delay = 2
 SWEP.NextBuild = 0
 SWEP.NextOpenMenu = 0
 
+SWEP.RotateAngle = 0
+SWEP.RotateSpeed = 75
 function SWEP:Deploy()
     self.Owner.Buildings = self.Owner.Buildings or {}
+end
+
+function SWEP:Reload()
+    if not self.Owner.HoloBuild or not self.Owner.HoloBuild:IsValid() then return end
+    
+    if self.RotateAngle > 360 then
+        self.RotateAngle = 0 
+    elseif self.RotateAngle < 0 then
+        self.RotateAngle = 360
+    end
+
+    self.RotateAngle = self.RotateSpeed * CurTime()
+
+    self.Owner.HoloBuild:SetAngles(Angle(0, self.RotateAngle, 0))
 end
 
 function SWEP:PrimaryAttack()
@@ -67,39 +83,11 @@ function SWEP:PrimaryAttack()
         end
     end
 
-    local tr = util.TraceLine({
-        start = self.Owner:EyePos(),
-        endpos = self.Owner:EyePos() + self.Owner:EyeAngles():Forward() * self.BuildRange,
-        filter = function( ent ) 
-            if ent:GetClass() == self.Owner.HoloBuild then 
-                return true 
-            end
-        end
-    } )
-
-    --Checks suitability of the desired spot
-    --basically checks if on the floor and not on a slope/wall
-    local cosine = tr.HitNormal:Dot(Vector(0, 0, 1))
-    
-    if cosine < 0.2588190451 then
-        return
-    elseif cosine < 0.7071067812 then
-        return
-    elseif self:InWallOrNearProp() then 
-        return
-    elseif tr.HitNormal.z ~= 1 then
-        return
-    end
-
     local building = ents.Create(self.Owner.HoloBuild.Class)
-    building:SetPos(tr.HitPos)
+    building:SetPos(self.Owner.HoloBuild:GetPos())
+    building:SetAngles(self.Owner.HoloBuild:GetAngles())
     building:Spawn()
-
-    timer.Simple(0.1, function()
-        building:AssignLeader(self.Owner)
-        building:BeginTimer()
-    end)
-
+    building:SetNWEntity("ZWR_Base_Leader", self.Owner)
     table.insert(self.Owner.Buildings, self.Owner.HoloBuild.Class)
 
     self.Owner.HoloBuild:Remove()
@@ -180,19 +168,25 @@ end)
 function SWEP:Think()
 
     if self.Owner:GetNWEntity("ZWR_Temp_Building"):IsValid() then
-        timer.Simple(0.1, function()
-            if self.Owner.HoloBuild and self.Owner.HoloBuild:IsValid() then return end
+        if not self.Owner.HoloBuild or not self.Owner.HoloBuild:IsValid() then
             self.Owner.HoloBuild = ents.Create("ent_zwr_faction_ghostbuild")
-            self.Owner.HoloBuild.Class = self.Owner:GetNWEntity("ZWR_Temp_Building"):GetClass()
-            
-            for _, m in pairs(GAMEMODE.DB.Buildings) do
-                if m.Class == self.Owner.HoloBuild.Class then
-                    self.Owner.HoloBuild:SetModel(m.Model)
+        end
+
+        self.Owner.HoloBuild.Class = self.Owner:GetNWEntity("ZWR_Temp_Building"):GetClass()
+
+        for _, m in pairs(GAMEMODE.DB.Buildings) do
+            if m.Class == self.Owner.HoloBuild.Class then
+                if m.AdjustZPos then
+                    self.Owner.HoloBuild.AdjustZPos = m.AdjustZPos
                 end
+                self.Owner.HoloBuild:SetModel(m.Model)
+                self.Owner.HoloBuild:SetMaterial("models/wireframe")
             end
 
-            self.Owner.HoloBuild:SetMaterial("models/wireframe")
-        end)
+            
+        end
+        
+        self.Owner:SetNWEntity("ZWR_Temp_Building", nil)
     end
 
     if self.Owner.HoloBuild == nil or not self.Owner.HoloBuild:IsValid() then return end
@@ -204,15 +198,13 @@ function SWEP:Holster()
 
     if self.Owner.HoloBuild and self.Owner.HoloBuild:IsValid() then
         self.Owner.HoloBuild:Remove()
+        self.Owner.HoloBuild = nil
     end
 
     return true
 end
 
 function SWEP:DrawPreviewModel() 
-
-    self.Owner:SetNWEntity("ZWR_Temp_Building", nil)
-
     local tr = util.TraceLine({
         start = self.Owner:EyePos(),
         endpos = self.Owner:EyePos() + self.Owner:EyeAngles():Forward() * self.BuildRange,
@@ -229,8 +221,8 @@ function SWEP:DrawPreviewModel()
 
     local cosine = tr.HitNormal:Dot(Vector(0, 0, 1))
     
-    if tr.Hit and tr.HitWorld and tr.HitNormal.z ~= 1 then
-        tr.HitPos = tr.HitPos + tr.HitNormal * self.Owner.HoloBuild:BoundingRadius() / 2
+    if tr.Hit and tr.HitWorld and tr.HitNormal.z == 1 then
+        tr.HitPos.z = tr.HitPos.z + tr.HitNormal.z + (self.Owner.HoloBuild.AdjustZPos or 1)
     end
 
     if self.Owner.HoloBuild and self.Owner.HoloBuild:IsValid() then

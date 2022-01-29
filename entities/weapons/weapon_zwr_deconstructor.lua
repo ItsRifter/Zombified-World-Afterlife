@@ -33,6 +33,7 @@ function SWEP:Deploy()
 end
 
 function SWEP:PrimaryAttack()
+    if CLIENT then return end
     if self.NextDeconstruct > CurTime() then return end
 
     local tr = util.TraceLine({
@@ -41,7 +42,7 @@ function SWEP:PrimaryAttack()
         filter = self.Owner
     } )
     
-    if tr.Hit and tr.Entity.FactionLeader == self.Owner then
+    if tr.Hit and tr.Entity:GetNWEntity("ZWR_Base_Leader") == self.Owner then
         for i, b in pairs(self.Owner.Buildings) do
             if b == tr.Entity:GetClass() then
                 table.remove(self.Owner.Buildings, i)
