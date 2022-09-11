@@ -1,7 +1,7 @@
 "Gamemode"
 {
 	"base" 			"base"
-	"title" 		"Zombified World: Reborn"
+	"title" 		"Zombified World: Afterlife"
 	"maps" 			""
 	"category"		"pvp"
 	"menusystem" 		"0"
