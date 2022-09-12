@@ -55,6 +55,12 @@ function ZWA_Player:SendMessage(...)
     net.Send(self)
 end
 
+function ZWA_Player:BroadcastSound(sndFile)
+    net.Start("ZWA_PlayerMsgSound")
+        net.WriteString(sndFile)
+    net.Send(self)
+end
+
 function ZWA_Player:Respawn()
     self:SetUp()
     self:UpdateNetwork()
@@ -101,39 +107,65 @@ function GM:PlayerHurt(victim, attacker, healthRemaining, damageTaken)
     end
 end
 
-hook.Add("PlayerPostThink", "ZWA_PlayerPostThink", function(ply)
+function ZWA_Player:StatusThink()
     --Regens stamina
-    if ply.lastSprint and ply.lastSprint < CurTime() and ply.stamina < 100 then
-        ply.stamina = math.Clamp(ply.stamina + GetConVar("zwa_player_staminaregen"):GetFloat(), 1, 100)
-        ply:SetNWInt("zwa.pl.stamina", math.Round(ply.stamina))
+    if self.lastSprint and self.lastSprint < CurTime() and self.stamina < 100 then
+        self.stamina = math.Clamp(self.stamina + GetConVar("zwa_player_staminaregen"):GetFloat(), 1, 100)
+        self:SetNWInt("zwa.pl.stamina", math.Round(self.stamina))
     end
 
-    --If we're moving, not crouching and sprinting with stamina above 0, start sprinting
-    if ply:KeyDown( IN_FORWARD ) and not ply:KeyDown(IN_DUCK) and ply:KeyDown( IN_SPEED ) and ply.stamina > 0 then
-        ply.lastSprint = 5 + CurTime()
-        ply.stamina = ply.stamina - GetConVar("zwa_player_staminarate"):GetFloat()
-        ply:SetNWInt("zwa.pl.stamina", math.Round(ply.stamina))
+    --If we're moving forward, not crouching and sprinting with stamina above 0, start sprinting
+    if self:KeyDown( IN_FORWARD ) and not self:KeyDown(IN_DUCK) and self:KeyDown( IN_SPEED ) and self.stamina > 0 and self:GetMoveType() ~= MOVETYPE_NOCLIP then
+        //Check if we're going fast enough to deplete stamina
+        if self:GetVelocity():LengthSqr() <= 4000 then return end
+
+        self.lastSprint = 5 + CurTime()
+        self.stamina = self.stamina - GetConVar("zwa_player_staminarate"):GetFloat()
+        self:SetNWInt("zwa.pl.stamina", math.Round(self.stamina))
     end
 
-    if ply.flashBattery <= 0 and ply:FlashlightIsOn() then
-        ply:Flashlight(false)
-    elseif ply.flashBattery < 25 and !ply:FlashlightIsOn() then
-        ply:AllowFlashlight( false )
+    if self.flashBattery <= 0 and self:FlashlightIsOn() then
+        self:Flashlight(false)
+    elseif self.flashBattery < 25 and !self:FlashlightIsOn() then
+        self:AllowFlashlight( false )
     else
-        ply:AllowFlashlight( true )
+        self:AllowFlashlight( true )
     end
 
-    if ply:FlashlightIsOn() and ply.flashBattery > 0 then
-        ply.lastFlash = 5 + CurTime()
-        ply.flashBattery = ply.flashBattery - GetConVar("zwa_player_flashrate"):GetFloat()
-        ply:SetNWInt("zwa.pl.flashlight", ply.flashBattery)
+    if self:FlashlightIsOn() and self.flashBattery > 0 then
+        self.lastFlash = 5 + CurTime()
+        self.flashBattery = self.flashBattery - GetConVar("zwa_player_flashrate"):GetFloat()
+        self:SetNWInt("zwa.pl.flashlight", self.flashBattery)
 
-    elseif not ply:FlashlightIsOn() and ply.flashBattery < 100 and ply.lastFlash <= CurTime() then
-        ply.flashBattery = math.Clamp(ply.flashBattery + GetConVar("zwa_player_flashregen"):GetFloat(), 0, 100)
+    elseif not self:FlashlightIsOn() and self.flashBattery < 100 and self.lastFlash <= CurTime() then
+        self.flashBattery = math.Clamp(self.flashBattery + GetConVar("zwa_player_flashregen"):GetFloat(), 0, 100)
 
-        ply:SetNWInt("zwa.pl.flashlight", ply.flashBattery)
-
+        self:SetNWInt("zwa.pl.flashlight", self.flashBattery)
     end
+end
+
+hook.Add("PlayerPostThink", "ZWA_PlayerPostThink", function(ply)
+    ply:StatusThink()
+end)
+
+function ZWA_Player:HandleMovement(mvData)
+    mvData:SetMaxClientSpeed( 150 )
+
+    --If sprinting and stamina is sufficent, increase the speed 
+    if self:KeyDown( IN_SPEED ) and !self:KeyDown( IN_DUCK ) and self:KeyDown( IN_FORWARD ) and self.stamina > 0 then       
+        local speed = mvData:GetMaxSpeed() * 1.65
+        mvData:SetMaxClientSpeed( speed )
+    end
+
+    --If Crouching, reduce speed
+    if self:KeyDown( IN_DUCK ) then
+        local speed = mvData:GetMaxSpeed() / 1.65
+        mvData:SetMaxClientSpeed( speed )
+    end	
+end
+
+hook.Add("Move", "ZWA_Player_Movement", function(ply, mv)
+    ply:HandleMovement(mv)
 end)
 
 function GM:PostPlayerDeath( ply )

@@ -17,3 +17,7 @@ function InitializeClient()
 end
 
 hook.Add("Initialize", "ZWA_Init_Client", InitializeClient)
+
+net.Receive("ZWA_LightEnv_Change", function()
+	render.RedownloadAllLightmaps(true, true)
+end)

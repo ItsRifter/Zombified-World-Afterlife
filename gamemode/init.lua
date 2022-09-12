@@ -10,6 +10,13 @@ include("server/sv_resources.lua")
 //Player
 include("server/playerbase/sv_player.lua")
 
+//NPC
+include("server/npcbase/sv_npc.lua")
+include("server/npcbase/sv_npc_mapsetup.lua")
+
+//Map Setup
+include("server/maps/sv_maps.lua")
+
 //Data saving
 include("server/datastorage/sv_flatfile.lua")
 

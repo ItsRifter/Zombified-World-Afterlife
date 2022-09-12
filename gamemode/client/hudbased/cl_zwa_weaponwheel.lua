@@ -30,8 +30,6 @@ wepWheel.color.a = Color( 255, 255, 255, 200)
 wepWheel.color.b = Color( 30, 30, 30, 150)
 wepWheel.color.c = Color( 200, 200, 200, 255 )
 
-wepWheel.overlay = 0
-
 -- Icons optimizations --
 wepWheel.iconsBuffer = {}
 
@@ -160,6 +158,8 @@ function InitWeaponWheel()
     for i = 0, 5 do wepWheel.selectedTable[i] = 1 end
 
     ZWA_Fonts:CreateFont("NoIconName", 26)
+    ZWA_Fonts:CreateFont("AmmoCount", 22)
+    ZWA_Fonts:CreateFont("SlotSelect", 26)
     hook.Add( "CreateMove", "wepWheel.wheel", CreateMove )
 
     hook.Add( "Think", "Show()", Think )
@@ -213,28 +213,11 @@ function GetWepTable( ply )
 end
 
 -- draw weapon icon --
-function wepWheel.DrawWeponIcon( wep, x, y, w, h )
+function DrawIcon( wep, x, y, w, h )
     local class = wep:GetClass()
-    local path = "materials/" .. class .. ".png"
-
-    -- Icons optimizations --
-    if wepWheel.iconsBuffer[path] == nil then
-        wepWheel.iconsBuffer[path] = file.Exists(path, "GAME")
-    end 
-
-    if wepWheel.iconsBuffer[path] then
-
-        surface.SetMaterial( Material( path ) )
-        surface.SetDrawColor( wepWheel.color.c )
-        surface.DrawTexturedRect( x, y, w, h )
-    else
-        if wep.WepSelectIcon ~= nil then
-            wep:DrawWeaponSelection( 0, 0, w, h )
-        else
-            draw.SimpleTextOutlined(wep:GetPrintName(), "ZWA_Fonts.NoIconName", w * 0.5, h * 0.5, 
-                Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
-        end
-    end
+    
+    draw.SimpleTextOutlined(wep:GetPrintName(), "ZWA_Fonts.NoIconName", w * 0.5, h * 0.5, 
+    Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
 end
 
 -- create seletion wheel --
@@ -335,7 +318,7 @@ function Create()
 
             if not slotWep[pos]:IsValid() then return end
 
-            wepWheel.DrawWeponIcon( slotWep[pos], 0, h - h * 1.1, w, h )
+            DrawIcon( slotWep[pos], 0, h - h * 1.1, w, h )
 
             local clip1 = slotWep[pos]:Clip1()
             local clip2 = ply:GetAmmoCount( slotWep[pos]:GetPrimaryAmmoType() )
@@ -353,7 +336,7 @@ function Create()
             surface.SetDrawColor( 0, 0, 0, 150 )
             surface.DrawTexturedRectRotated( w * 0.5, h * 0.61, w * factor * sybols, h * 0.11, 0)
 
-            draw.SimpleTextOutlined( text, "AmmoCount", w * 0.5, h * 0.6, 
+            draw.SimpleTextOutlined( text, "ZWA_Fonts.AmmoCount", w * 0.5, h * 0.6, 
                 Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
         end
 
@@ -405,13 +388,14 @@ function Create()
         if not slotWep[pos]:IsValid() then return end
 
         if wepWheel.selected >= 0 then
-        local text = "<   " .. pos .. "  /  " .. count .. "   >"
-            draw.SimpleTextOutlined( text, "SlotSelection", w * 0.5, h * 0.3, 
+        
+            local text = "<   " .. pos .. "  /  " .. count .. "   >"
+            draw.SimpleTextOutlined( text, "ZWA_Fonts.SlotSelect", w * 0.5, h * 0.3, 
                 Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
         end
         
-        draw.SimpleTextOutlined( slotWep[pos]:GetPrintName(), "SlotSelection", w * 0.5, h * 0.2, 
-            Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
+        -- draw.SimpleTextOutlined( slotWep[pos]:GetPrintName(), "ZWA_Fonts.SlotSelect", w * 0.5, h * 0.2, 
+        --     Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
     end
 
     wepWheel.panel:Hide()
@@ -453,14 +437,13 @@ function Hide()
             if not (pos <= 0) and not table.IsEmpty( slotWep ) then
                 if slotWep[pos]:IsValid() then
                     RunConsoleCommand( "use", slotWep[pos]:GetClass() )
-                  
                 end
             end
         end
 
         gui.EnableScreenClicker(false)
         
-        //wepWheel.SoundPlaySingle( wepWheel.sound.close, nil, )
+        surface.PlaySound( wepWheel.sound.close )
 
         wepWheel.panel:Hide()
         wepWheel.isOpened = false
@@ -471,11 +454,6 @@ function Hide()
     timer.Remove( "wepWheel.NullControlDelay" )
     timer.Create( "wepWheel.NullControlDelay", 0.1, 1, function()
         hook.Remove( "StartCommand", "wepWheel.NullControl" )
-    end)
-
-    -- overlay animations --
-    hook.Add("Think", "wepWheel.animation", function()
-        wepWheel.overlay = Lerp( 10 * FrameTime(), wepWheel.overlay, 0 )
     end)
 end
 
@@ -908,13 +886,6 @@ function Think()
 
             Show()
 
-            if ply:Alive() and not vgui.CursorVisible() and not ply:InVehicle() then
-                -- overlay animations --
-                hook.Add("Think", "wepWheel.animation", function()
-                    wepWheel.overlay = Lerp( 10 * FrameTime(), wepWheel.overlay, 1 )
-                end)
-            end
-
             wepWheel.onFastOpen = false
             wepWheel.onNumsOpen = false
             timer.Remove( "wepWheel.FastOpenHide" )
@@ -933,7 +904,7 @@ end
 local previousReso, currentReso = 0, 0
 
 -- check if resolution changed --
-hook.Add("Think", "wepWheel.ResolutionCheck", function()
+hook.Add("Think", "ResCheck", function()
     currentReso = ScrW() * ScrH()
 
     if currentReso ~= previousReso then

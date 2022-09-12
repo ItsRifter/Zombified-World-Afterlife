@@ -1,6 +1,6 @@
 local lastBattery = 0
 local lastUsedFlash = 0
-
+local stamina = 0
 function DoHudPaint()
     --Health
     ----Border
@@ -41,16 +41,34 @@ function DoHudPaint()
             surface.SetDrawColor(160, 160, 160)
         end
 
-        surface.DrawRect(ScrW() / 2 - 65, ScrH() - 50, LocalPlayer():GetNWInt("zwa.pl.flashlight", 0) * 2, 35)
+        surface.DrawRect(ScrW() / 2 - 65, ScrH() - 50, lastBattery * 2, 35)
     end
+
+    stamina = LocalPlayer():GetNWInt("zwa.pl.stamina", 0)
+        
+    draw.SimpleTextOutlined("Stamina:", "ZWA_Fonts.HUD", 25, ScrH() - 40, Color(255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0))
+
+    surface.SetDrawColor(0, 0, 0)
+    surface.DrawRect(135, ScrH() - 55, 100, 35)
+
+    surface.SetDrawColor(200, 200, 200)
+    surface.DrawRect(135, ScrH() - 55, stamina, 35)
 end
 
 function DisplayMessage(message)
     chat.AddText(unpack(message))
 end
 
+function PlaySoundMessage(sndPath)
+    surface.PlaySound(sndPath)
+end
+
 net.Receive("ZWA_PlayerMessage", function()
     DisplayMessage(net.ReadTable())
+end)
+
+net.Receive("ZWA_PlayerMsgSound", function()
+    PlaySoundMessage(net.ReadString())
 end)
 
 local defaultHUD = {

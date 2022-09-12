@@ -73,7 +73,7 @@ end)
 
 
 --Upon a map change or server shutdown, save everyones progress
-hook.Add( "ShutDown", "zwa_MapChangeSave", function()
+hook.Add( "ShutDown", "ZWA_MapChangeSave", function()
 	--If we aren't using TXT format saving, stop here
 	//if GAMEMODE.MYSQL.Data.Type ~= "txt" then return end
 
