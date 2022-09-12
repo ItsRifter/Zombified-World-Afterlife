@@ -156,7 +156,6 @@ local INVPANEL = {}
 
 function INVPANEL:Init()
     self.slots = {}
-    //self:Dock(LEFT)
 end
 
 function INVPANEL:AddSlot(slotID)
@@ -166,7 +165,6 @@ end
 
 function INVPANEL:PerformLayout(w, h)
     self:SetTall(ZWA_UISizes.invPanel.height * 2)
-    //self:SetWide(ZWA_UISizes.invPanel.width)
 end
 
 function INVPANEL:Paint(w, h)
@@ -201,3 +199,20 @@ function INVSLOT:Paint(w, h)
 end
 
 vgui.Register("ZWA_InvSlot", INVSLOT)
+
+local PLAYERLIST = {}
+
+function PLAYERLIST:Init()
+    self.players = players.GetAll()
+    self.playerCount = #players.GetAll()
+end
+
+function PLAYERLIST:Paint(w, h)
+    
+end
+
+function PLAYERLIST:PerformLayout(w, h)
+
+end
+
+vgui.Register("ZWA_PlayerList", PLAYERLIST)

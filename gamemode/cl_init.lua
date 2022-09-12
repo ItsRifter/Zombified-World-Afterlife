@@ -13,6 +13,7 @@ include("shared/playerbase/sh_player.lua")
 function InitializeClient()
     ZWA_Fonts:CreateFont("HUD", 32)
     ZWA_Fonts:CreateFont("NoIcon")
+    InitWeaponWheel()
 end
 
 hook.Add("Initialize", "ZWA_Init_Client", InitializeClient)

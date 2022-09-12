@@ -26,7 +26,8 @@ local snd_hurt_female = {
 
 function ZWA_Player:SetUp()
     self:SetModel(self.zwa.Model)
-    
+    self:SetupHands()
+
     self.lastSprint = 0
     self.lastFlash = 0
     self.respawnTime = 0

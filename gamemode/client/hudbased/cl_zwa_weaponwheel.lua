@@ -1,54 +1,61 @@
 local wepWheel = {}
 
-wepWheel.soundList = {}
-wepWheel.soundList.active = ""
-wepWheel.soundList.deactive = ""
-wepWheel.soundList.select = ""
+wepWheel.panel = nil
 
-wepWheel.wepTbl = {}
-wepWheel.activeWep = {}
-wepWheel.selectedWep = nil
+wepWheel.wepTable = {}
+wepWheel.activeWeapon = {}
+wepWheel.selectedWeapon = nil
 
-wepWheel.selectTbl = {}
+wepWheel.selectedTable = {}
 wepWheel.selected = -1
-wepWheel.preselect = -1
+wepWheel.preselected = -1
 
-wepWheel.created = false
+wepWheel.isOpened = false
+wepWheel.onFastOpen = true
+wepWheel.onNumsOpen = false
+
+wepWheel.firstCreationBool = false
+
+wepWheel.inAttack2 = false
+wepWheel.inAttack = false
+wepWheel.inUse = false
+
+wepWheel.sound = {}
+wepWheel.sound.close = "zwa/radialequip.wav"
+wepWheel.sound.switch1 = "zwa/radialselect.wav"
+wepWheel.sound.switch2 = "zwa/radialselect.wav"
+
+wepWheel.color = {}
+wepWheel.color.a = Color( 255, 255, 255, 200)
+wepWheel.color.b = Color( 30, 30, 30, 150)
+wepWheel.color.c = Color( 200, 200, 200, 255 )
 
 wepWheel.overlay = 0
 
-local colorA = Color( 145, 0, 0, 200)
-local colorB = Color( 255, 255, 255, 150)
-local colorC = Color( 200, 200, 200, 255 )
+-- Icons optimizations --
+wepWheel.iconsBuffer = {}
 
-local lastResolution, currentResolution = 0, 0
+function IsKeyDown( cmd )
+    for key = 1, 161 do
+        if input.LookupKeyBinding( key ) == cmd then
+            local isDown = false
+	
+            isDown = input.IsButtonDown( key )
 
-local function OnBindPressed( bind )
+            if isDown then return true end
 
-    local binding = input.LookupBinding( bind ) or 0
-    local keyCode = input.GetKeyCode( binding )
+            isDown = input.IsKeyDown( key )
 
-    if input.WasKeyPressed( keyCode ) or input.WasMousePressed( keyCode ) then
+            if isDown then return true end
 
-        -- If any addon suppresses the binding, then this will be known here.
-        if not hook.Run( "PlayerBindPress", LocalPlayer(), bind ) then
-            return true
+            isDown = input.IsMouseDown( key )
+
+            return isDown
         end
     end
-
-    return false
 end
 
-function wepWheel.Init()
-    for i = 0, 5 do wepWheel.selectTbl[i] = 1 end
-
-    hook.Add( "CreateMove", "wepWheel.wheel", wepWheel.CreateMove )
-
-    hook.Add( "Think", "wepWheel.show", wepWheel.Think )
-end
-
-
-function wepWheel.GetPointInCircle( ang, radius, offX, offY )
+function GetPointInCircle( ang, radius, offX, offY )
 	ang = math.rad( ang )
 	local x = math.cos( ang ) * radius + offX
 	local y = math.sin( ang ) * radius + offY
@@ -63,7 +70,7 @@ end
 
 function BeginDrawArc( cx, cy, radius, thickness, startang, endang, roughness, color )
     draw.NoTexture()
-	surface.SetDrawColor( colorA )
+	surface.SetDrawColor( color )
 	DrawArc( PrecacheArc( cx, cy, radius, thickness, startang, endang, roughness ) )
 end
 
@@ -81,10 +88,10 @@ function PrecacheArc( cx, cy, radius, thickness, startang, endang, roughness )
 
 	local smoothness = 3
 
-	-- if roughness <= 0 then smoothness = 1 end
-	-- if roughness == 1 then smoothness = 2 end
-	-- if roughness == 2 then smoothness = 3 end
-	-- if roughness >= 3 then smoothness = 4 end
+	if roughness <= 0 then smoothness = 1 end
+	if roughness == 1 then smoothness = 2 end
+	if roughness == 2 then smoothness = 3 end
+	if roughness >= 3 then smoothness = 4 end
 
 	local diff = abs(startang-endang)
 	local step = diff / (pow(2,smoothness))
@@ -139,10 +146,104 @@ function PrecacheArc( cx, cy, radius, thickness, startang, endang, roughness )
 	
 end
 
-function wepWheel.CreateWheel()
+function PointOnCircle( ang, radius, offX, offY )
+	ang = math.rad( ang )
+	local x = math.cos( ang ) * radius + offX
+	local y = math.sin( ang ) * radius + offY
+	return x, y
+end
 
+-- initialization --
+function InitWeaponWheel() 
+    if !ZWA_Fonts then return end
+    
+    for i = 0, 5 do wepWheel.selectedTable[i] = 1 end
+
+    ZWA_Fonts:CreateFont("NoIconName", 26)
+    hook.Add( "CreateMove", "wepWheel.wheel", CreateMove )
+
+    hook.Add( "Think", "Show()", Think )
+end
+
+-- get active weapon --
+function GetActiveWep( ply )
+    
+    local table = {}
+    local weapons = ply:GetWeapons()
+    local active = ply:GetActiveWeapon()
+
+    for k, wep in pairs( weapons ) do
+        if active == wep then
+            table = {
+                wep = wep,
+                slot = wep:GetSlot()
+            }
+        end
+    end
+    
+    return table
+end
+
+-- get wep table --
+function GetWepTable( ply )
+
+    local table = {}
+    local weapons = ply:GetWeapons()
+
+    for i = 0, 5 do
+
+        table[i] = {}
+        local tumb = {}
+
+        for k, wep in pairs( weapons ) do
+            if wep:GetSlot() ~= i then continue end
+            tumb[k] = { weapon = wep, slotPos = wep:GetSlotPos() }
+        end
+
+        local index = 1
+
+        for k, v in SortedPairsByMemberValue( tumb, "slotPos" ) do
+            table[i][index] = v.weapon
+
+            index = index + 1
+        end
+    end
+
+    return table
+end
+
+-- draw weapon icon --
+function wepWheel.DrawWeponIcon( wep, x, y, w, h )
+    local class = wep:GetClass()
+    local path = "materials/" .. class .. ".png"
+
+    -- Icons optimizations --
+    if wepWheel.iconsBuffer[path] == nil then
+        wepWheel.iconsBuffer[path] = file.Exists(path, "GAME")
+    end 
+
+    if wepWheel.iconsBuffer[path] then
+
+        surface.SetMaterial( Material( path ) )
+        surface.SetDrawColor( wepWheel.color.c )
+        surface.DrawTexturedRect( x, y, w, h )
+    else
+        if wep.WepSelectIcon ~= nil then
+            wep:DrawWeaponSelection( 0, 0, w, h )
+        else
+            draw.SimpleTextOutlined(wep:GetPrintName(), "ZWA_Fonts.NoIconName", w * 0.5, h * 0.5, 
+                Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
+        end
+    end
+end
+
+-- create seletion wheel --
+function Create()
+
+    wepWheel.wepWheelShoudReCreate = false
+    
     -- set scale --
-    local pl = LocalPlayer()
+    local ply = LocalPlayer()
     local selSize = ScrH() * 0.65
 
     wepWheel.panel = vgui.Create( "DPanel" )
@@ -177,26 +278,26 @@ function wepWheel.CreateWheel()
         cell.Index = index
         cell.Paint = function( self, w, h )
 
-            if not pl:Alive() or table.IsEmpty( wepWheel.wepTbl ) then return end
+            if not ply:Alive() or table.IsEmpty( wepWheel.wepTable ) then return end
 
             local a = degrees
             local b = a + 60
             
-            local c = colorB
+            local c = wepWheel.color.b
             local color = Color( c.r, c.g, c.b , c.a )
 
             local color2 = Color( c.r * 0.5, c.g * 0.5, c.b * 0.5, c.a + 70 )
 
             if self.Index == wepWheel.selected then
-                local c = colorA
+                local c = wepWheel.color.a
                 color = Color( c.r + 30, c.g + 30, c.b + 30, c.a )
             end
             
             local activeWep = wepWheel.activeWeapon
 
             if self.Index == activeWep.slot then
-                local c = colorA
-                color2 = colorA
+                local c = wepWheel.color.a
+                color2 = wepWheel.color.a
             end
             
             BeginDrawArc( w * 0.5, h * 0.5, w * 0.5, w * 0.2, a, b, 3, color )
@@ -212,7 +313,7 @@ function wepWheel.CreateWheel()
     -- create wep icons and ammo --
     for degrees = -90, 220, 60 do
 
-        local x, y = wepWheel.GetPointInCircle( degrees, selSize * 0.35, h * 0.5, w * 0.5 )
+        local x, y = PointOnCircle( degrees, selSize * 0.35, h * 0.5, w * 0.5 )
         local size = selSize * 0.3
 
         local slotInfo = vgui.Create( "DPanel", wepWheel.panel)
@@ -221,15 +322,15 @@ function wepWheel.CreateWheel()
         slotInfo.Index = index
         slotInfo.Paint = function( self, w, h )
 
-            if not pl:Alive() or table.IsEmpty(wepWheel.wepTbl) then return end
+            if not ply:Alive() or table.IsEmpty(wepWheel.wepTable) then return end
             
-            local slotWep = wepWheel.wepTbl
+            local slotWep = wepWheel.wepTable[self.Index]
             local count = table.Count( slotWep )
-            local pos = wepWheel.selectTbl[self.Index]
+            local pos = wepWheel.selectedTable[self.Index]
 
             if pos <= 0 or table.IsEmpty( slotWep ) then return end
             if slotWep[pos] == nil then
-                wepWheel.selectTbl[self.Index] = pos - 1 return
+                wepWheel.selectedTable[self.Index] = pos - 1 return
             end
 
             if not slotWep[pos]:IsValid() then return end
@@ -237,8 +338,8 @@ function wepWheel.CreateWheel()
             wepWheel.DrawWeponIcon( slotWep[pos], 0, h - h * 1.1, w, h )
 
             local clip1 = slotWep[pos]:Clip1()
-            local clip2 = pl:GetAmmoCount( slotWep[pos]:GetPrimaryAmmoType() )
-            local clip3 = pl:GetAmmoCount( slotWep[pos]:GetSecondaryAmmoType() )
+            local clip2 = ply:GetAmmoCount( slotWep[pos]:GetPrimaryAmmoType() )
+            local clip3 = ply:GetAmmoCount( slotWep[pos]:GetSecondaryAmmoType() )
 
             local text = clip1 .. "  /  " .. clip2
             text = clip1 < 0 and clip2 >= 0 and clip2 or text
@@ -268,7 +369,7 @@ function wepWheel.CreateWheel()
     slotInfo:SetSize( size, size )
     slotInfo.Paint = function( self, w, h )
 
-        if not pl:Alive() or table.IsEmpty( wepWheel.wepTbl ) then return end
+        if not ply:Alive() or table.IsEmpty( wepWheel.wepTable ) then return end
         
         local slot = wepWheel.selected
 
@@ -277,25 +378,25 @@ function wepWheel.CreateWheel()
             slot = active.slot or 0
 
             if not table.IsEmpty( active ) then            
-                for v, k in ipairs( wepWheel.wepTbl[slot] ) do
+                for v, k in ipairs( wepWheel.wepTable[slot] ) do
                     if k:IsValid() and active.wep:IsValid() then
                         if k:GetClass() == active.wep:GetClass() then
-                            wepWheel.selectTbl[slot] = v
+                            wepWheel.selectedTable[slot] = v
                         end
                     end
                 end
             end
         end
 
-        local slotWep = wepWheel.wepTbl[slot]
-        local pos = wepWheel.selectTbl[slot]
+        local slotWep = wepWheel.wepTable[slot]
+        local pos = wepWheel.selectedTable[slot]
 
         if slotWep == nil then return end
 
         local count = table.Count( slotWep )
 
-        if wepWheel.selectTbl[slot] > count then
-            wepWheel.selectTbl[slot] = count > 0 and count or 1
+        if wepWheel.selectedTable[slot] > count then
+            wepWheel.selectedTable[slot] = count > 0 and count or 1
         end
 
         wepWheel.selectedWeapon = slotWep[pos]
@@ -313,164 +414,54 @@ function wepWheel.CreateWheel()
             Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
     end
 
-    -- create wep info --
-    wepWheel.panelInfo = vgui.Create("DPanel")
-    wepWheel.panelInfo:SetSize( 260, ScrH() * 0.28 )
-    wepWheel.panelInfo:SetPos( ScrW() - 260 - 260 * 0.1, ScrH() * 0.02)
-    wepWheel.panelInfo.BoxHeight = 100
-    wepWheel.panelInfo.Paint = function( self, w, h )
-
-        local wep = wepWheel.selectedWeapon
-        if wep == nil or not wep:IsValid() then return end
-        if wep.DrawWeaponInfoBox ~= true then return end
- 
-        if wep.Author == "" and wep.Contact == "" and wep.Purpose == "" 
-            and wep.Instructions == "" then return end
-
-        draw.RoundedBox( 3, 0, 0, w, self.BoxHeight, Color( 50, 50, 50, 200 ) )
-        draw.RoundedBox( 3, 0, 0, w, 15, wepWheel.color.a )
-
-        draw.SimpleTextOutlined( "Swep info:", "DermaDefault", 3, 0, 
-            Color( 255, 255, 255 ), nil, nil, 1, Color( 0, 0, 0 ) )
-
-        if ( wep.InfoMarkup == nil ) then
-            local str = ""
-            local title_color = "<color=230,230,230,255>"
-            local text_color = "<color=230,150,150,255>"
-
-            str = "<font=DermaDefault>"
-            if ( wep.Author ~= "" ) then str = str .. title_color .. 
-                    "Author:</color>\t" .. text_color .. wep.Author .. "</color>\n" end
-            if ( wep.Contact ~= "" ) then str = str .. title_color .. 
-                    "Contact:</color>\t" .. text_color .. wep.Contact .. "</color>\n\n" end
-            if ( wep.Purpose ~= "" ) then str = str .. title_color .. 
-                    "Purpose:</color>\n" .. text_color .. wep.Purpose .. "</color>\n\n" end
-            if ( wep.Instructions ~= "" ) then str = str .. title_color .. 
-                    "Instructions:</color>\n" .. text_color .. wep.Instructions .. "</color>\n" end
-            str = str .. "</font>"
-
-            wep.InfoMarkup = markup.Parse( str, 250 )
-        end
-
-        wep.InfoMarkup:Draw( w * 0.03, h * 0.07, nil, nil, 255 )
-        self.BoxHeight = wep.InfoMarkup.totalHeight + 20
-    end
-
-    wepWheel.panelInfo:Hide()
     wepWheel.panel:Hide()
 end
 
-function wepWheel.ReturnActive( pl )
-    
-    local wepTbl = {}
-
-    for k, weapon in pairs( pl:GetWeapons() ) do
-        if active == pl:GetActiveWeapon() then
-            wepTbl = {
-                weapon = weapon,
-                slot = wep:GetSlot()
-            }
-
-            break
-        end
-    end
-    
-    return wepTbl
-end
-
-function wepWheel.GetWepTable( pl )
-
-    local tbl = {}
-    local weps = pl:GetWeapons()
-
-    for i = 0, 5 do
-
-        tbl[i] = {}
-        local tumb = {}
-
-        for k, wep in pairs( weps ) do
-            if wep:GetSlot() ~= i then continue end
-            tumb[k] = { weapon = wep, slotPos = wep:GetSlotPos() }
-        end
-
-        local index = 1
-
-        for k, v in SortedPairsByMemberValue( tumb, "slotPos" ) do
-            tbl[i][index] = v.weapon
-
-            index = index + 1
-        end
-    end
-
-    return table
-end
-
-function wepWheel.DrawIcon( wep, x, y, w, h )
-    local path = "materials/" .. wep:GetClass() .. ".png"
-
-    -- Icons optimizations --
-    if wepWheel.iconsBuffer[path] == nil then
-        wepWheel.iconsBuffer[path] = file.Exists(path, "GAME")
-    end 
-
-    if wepWheel.iconsBuffer[path] then
-
-        surface.SetMaterial( Material( path ) )
-        surface.SetDrawColor( wepWheel.color.c )
-        surface.DrawTexturedRect( x, y, w, h )
-    else
-        if wep.WepSelectIcon ~= nil then
-            wep:DrawWeaponSelection( 0, 0, w, h )
-        else
-            draw.SimpleTextOutlined(wep:GetPrintName(), "ZWA_Fonts.NoIcon", w * 0.5, h * 0.5, 
-                Color( 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color( 0, 0, 0 ) )
-        end
-    end
-end
-
-function wepWheel.Show()
+-- show selection wheel --
+function Show()
 
     if vgui.CursorVisible() then return end
 
     if IsValid( wepWheel.panel ) and wepWheel.panel:IsVisible() then return end
 
-    if !LocalPlayer():Alive() or LocalPlayer():InVehicle() then return end
+    if IsValid( g_ContextMenu ) and g_ContextMenu:IsVisible() then return end
+    
+    if IsValid( g_SpawnMenu ) && g_SpawnMenu:IsVisible() then return end
+
+    if not LocalPlayer():Alive() or LocalPlayer():InVehicle() then return end
 
     if wepWheel.wepWheelShoudReCreate and IsValid( wepWheel.panel ) then
+
         wepWheel.panel:Remove()
-        wepWheel.CreateWheel()
+        Create()
     end
 
-    surface.PlaySound( wepWheel.soundList.active )
-
     wepWheel.panel:Show()
-
-    wepWheel.panelInfo:Show()
 
     wepWheel.isOpened = true
 end
 
 -- hide selection wheel --
-function wepWheel.Hide()
+function Hide()
     if IsValid( wepWheel.panel ) and wepWheel.panel:IsVisible() then
 
         if wepWheel.selected >= 0 and LocalPlayer():Alive() then
 
-            local slotWep = wepWheel.wepTbl[wepWheel.selected]
-            local pos = wepWheel.selectTbl[wepWheel.selected]
+            local slotWep = wepWheel.wepTable[wepWheel.selected]
+            local pos = wepWheel.selectedTable[wepWheel.selected]
 
             if not (pos <= 0) and not table.IsEmpty( slotWep ) then
                 if slotWep[pos]:IsValid() then
                     RunConsoleCommand( "use", slotWep[pos]:GetClass() )
+                  
                 end
             end
         end
 
         gui.EnableScreenClicker(false)
         
-        surface.PlaySound( wepWheel.soundList.deactive )
+        //wepWheel.SoundPlaySingle( wepWheel.sound.close, nil, )
 
-        wepWheel.panelInfo:Hide()
         wepWheel.panel:Hide()
         wepWheel.isOpened = false
         wepWheel.onFastOpen = false
@@ -482,41 +473,121 @@ function wepWheel.Hide()
         hook.Remove( "StartCommand", "wepWheel.NullControl" )
     end)
 
+    -- overlay animations --
     hook.Add("Think", "wepWheel.animation", function()
         wepWheel.overlay = Lerp( 10 * FrameTime(), wepWheel.overlay, 0 )
     end)
 end
 
+-- Hook's functions --
 
-function wepWheel.CreateMove( cmd )
+local delay = 0.05
+local shouldOccur = true
+
+local function WasBindPressed( bind )
+
+    local binding = input.LookupBinding( bind ) or 0
+    local keyCode = input.GetKeyCode( binding )
+
+    if input.WasKeyPressed( keyCode ) or input.WasMousePressed( keyCode ) then
+
+        -- If any addon suppresses the binding, then this will be known here.
+        if not hook.Run( "PlayerBindPress", LocalPlayer(), bind ) then
+            return true
+        end
+    end
+
+    return false
+end
+
+function CreateMove( cmd )
+
+    -- default selection controls --
+    if wepWheel.isOpened and not wepWheel.onFastOpen and not wepWheel.onNumsOpen then
+        if wepWheel.selected >= 0 then
+
+            local slotWep = wepWheel.wepTable[wepWheel.selected] 
+            if slotWep == nil then return end
+            
+            local pos = wepWheel.selectedTable[wepWheel.selected]
+            local count = table.Count(slotWep)
+
+            if WasBindPressed( "invprev" ) then 
+                
+                if shouldOccur then
     
-    if not wepWheel.created then
-        wepWheel.CreateWheel()
-        wepWheel.created = true
+                    wepWheel.selectedTable[wepWheel.selected] = pos + 1
+
+                    if wepWheel.selectedTable[wepWheel.selected] > count then
+                        wepWheel.selectedTable[wepWheel.selected] = 1
+                    end
+                    
+                    if count > 1 then
+                        surface.PlaySound(wepWheel.sound.switch2)
+                    end
+
+                    shouldOccur = false
+
+                    timer.Simple( delay, function() shouldOccur = true end )
+                end
+            end
+        
+            if WasBindPressed( "invnext" ) then
+
+                if shouldOccur then
+        
+                    wepWheel.selectedTable[wepWheel.selected] = pos - 1
+                    
+                    if wepWheel.selectedTable[wepWheel.selected] < 1 then
+                        wepWheel.selectedTable[wepWheel.selected] = count > 0 and count or 1
+                    end
+
+                    if count > 1 then
+                        surface.PlaySound(wepWheel.sound.switch2)
+                    end
+
+                    shouldOccur = false
+
+                    timer.Simple( delay, function() shouldOccur = true end )
+                end
+            end
+        end
+
+        if WasBindPressed( "+attack" ) then
+            Hide()
+        end
+
+        return
     end
 
-    local function GetSlotData( slot )
-        local slotWep = wepWheel.wepTable[wepWheel.selected] 
-        if slotWep == nil then return nil end
-        
-        local pos = wepWheel.selectedTable[wepWheel.selected]
-        local count = table.Count(slotWep)
+    if !wepWheel.inAttack2 and !wepWheel.inAttack and !wepWheel.inUse then
 
-        return pos, count
-    end
+        -- create table if it's isn't created --
+        if !wepWheel.firstCreationBool then
+            Create()
+            wepWheel.firstCreationBool = true
+        end
 
-    -- scrool wheel input --
-    if OnBindPressed( "invprev" ) then
-        
-        wepWheel.Show()
+        local function GetSlotData( slot )
+            local slotWep = wepWheel.wepTable[wepWheel.selected] 
+            if slotWep == nil then return nil end
+            
+            local pos = wepWheel.selectedTable[wepWheel.selected]
+            local count = table.Count(slotWep)
 
-        if wepWheel.isOpened then
-            wepWheel.onFastOpen = true
+            return pos, count
+        end
 
-            if shouldOccur then
+        -- scrool wheel input --
+        if WasBindPressed( "invprev" ) then
+            
+            Show()
 
-                -- If convar mostrush_wepWheel_fastopen_hl2 is TRUE --
-                if GetConVar( "mostrush_wepWheel_fastopen_hl2" ):GetBool() then
+            if wepWheel.isOpened then
+                wepWheel.onFastOpen = true
+
+                if shouldOccur then
+
 
                     if wepWheel.selected == -1 then
                         wepWheel.selected = wepWheel.activeWeapon.slot or 1
@@ -543,67 +614,53 @@ function wepWheel.CreateMove( cmd )
                         end
                         
                         if count > 1 then
-                            wepWheelwheel.SoundPlaySingle( wepWheel.sound.switch2, nil, wepWheel.sound.volume )
+                            surface.PlaySound(wepWheel.sound.switch2)
                         end
 
                     end
 
-                -- If convar mostrush_wepWheel_fastopen_hl2 is FALSE --
-                else
+                    local count = 0
 
-                    wepWheel.selected = wepWheel.selected + 1
+                    while wepWheel.selected == -1 or table.IsEmpty( wepWheel.wepTable[wepWheel.selected] ) do
 
-                    if wepWheel.selected > 5 then
-                        wepWheel.selected = 0
+                        if count >= 5 then wepWheel.selected = -1 break end
+
+                        wepWheel.selected = wepWheel.selected + 1
+
+                        if wepWheel.selected > 5 then
+                            wepWheel.selected = 0
+                        end
+
+                        count = count + 1
                     end
 
+                    shouldOccur = false
+                    timer.Simple( delay, function() shouldOccur = true end )
                 end
 
-                local count = 0
+                timer.Remove( "wepWheel.FastOpenHide" )
+                timer.Create( "wepWheel.FastOpenHide", 1, 1, function()
+                    Hide()
+                end)
 
-                while wepWheel.selected == -1 or  
-                    table.IsEmpty( wepWheel.wepTable[wepWheel.selected] ) do
-
-                    if count >= 5 then wepWheel.selected = -1 break end
-
-                    wepWheel.selected = wepWheel.selected + 1
-
-                    if wepWheel.selected > 5 then
-                        wepWheel.selected = 0
-                    end
-
-                    count = count + 1
-                end
-
-                shouldOccur = false
-                timer.Simple( delay, function() shouldOccur = true end )
+                hook.Add( "StartCommand", "wepWheel.NullControl", function( ply, cmd )
+                    cmd:RemoveKey( IN_ATTACK )
+                end)
             end
-
-            timer.Remove( "wepWheel.FastOpenHide" )
-            timer.Create( "wepWheel.FastOpenHide", 1, 1, function()
-                wepWheel.Hide()
-            end)
-
-            hook.Add( "StartCommand", "wepWheelwheel.NullControl", function( ply, cmd )
-                cmd:RemoveKey( IN_ATTACK )
-            end)
         end
-    end
 
-    if OnBindPressed( "invnext" ) then
+        if WasBindPressed( "invnext" ) then
 
-        wepWheel.Show()
+            Show()
 
-        if wepWheel.isOpened then
+            if wepWheel.isOpened then
 
-            wepWheel.onFastOpen = true
-            
-            if shouldOccur then
+                wepWheel.onFastOpen = true
+                
+                if shouldOccur then
 
-                local shouldSetToCount = false
+                    local shouldSetToCount = false
 
-                -- If convar mostrush_wepWheel_fastopen_hl2 is TRUE --
-                if GetConVar( "mostrush_wepWheel_fastopen_hl2" ):GetBool() then
                     if wepWheel.selected == -1 then
                         wepWheel.selected = wepWheel.activeWeapon.slot or 1
                     end
@@ -634,71 +691,60 @@ function wepWheel.CreateMove( cmd )
                         end
                         
                         if count > 1 then
-                            wepWheelwheel.SoundPlaySingle( wepWheel.sound.switch2, nil, wepWheel.sound.volume )
+                            surface.PlaySound(wepWheel.sound.switch2)
+                        end
+                    end
+                    
+                    local count = 0
+
+                    while wepWheel.selected == -1 or  
+                        table.IsEmpty( wepWheel.wepTable[wepWheel.selected] ) do
+
+                        if count >= 5 then wepWheel.selected = -1 break end
+
+                        wepWheel.selected = wepWheel.selected - 1
+
+                        if wepWheel.selected < 0 then
+                            wepWheel.selected = 5
                         end
 
+                        count = count + 1
                     end
 
-                -- If convar mostrush_wepWheel_fastopen_hl2 is FALSE --
-                else
-
-                    wepWheel.selected = wepWheel.selected - 1
-                    
-                    if wepWheel.selected < 0 then
-                        wepWheel.selected = 5
+                    if shouldSetToCount then
+                        local pos, count = GetSlotData( wepWheel.selected )
+                                
+                        if pos ~= nil then
+                            wepWheel.selectedTable[wepWheel.selected] = count > 0 and count or 1
+                        end
                     end
 
+                    shouldOccur = false
+                    timer.Simple( delay, function() shouldOccur = true end )
                 end
 
-                local count = 0
+                timer.Remove( "wepWheel.FastOpenHide" )
+                timer.Create( "wepWheel.FastOpenHide", 1, 1, function() 
+                    Hide()
+                end)
 
-                while wepWheel.selected == -1 or  
-                    table.IsEmpty( wepWheel.wepTable[wepWheel.selected] ) do
-
-                    if count >= 5 then wepWheel.selected = -1 break end
-
-                    wepWheel.selected = wepWheel.selected - 1
-
-                    if wepWheel.selected < 0 then
-                        wepWheel.selected = 5
-                    end
-
-                    count = count + 1
-                end
-
-                if shouldSetToCount then
-                    local pos, count = GetSlotData( wepWheel.selected )
-                            
-                    if pos ~= nil then
-                        wepWheel.selectedTable[wepWheel.selected] = count > 0 and count or 1
-                    end
-                end
-
-                shouldOccur = false
-                timer.Simple( delay, function() shouldOccur = true end )
+                hook.Add( "StartCommand", "wepWheel.NullControl", function( ply, cmd )
+                    cmd:RemoveKey( IN_ATTACK )
+                end)
             end
+        end
+
+        if WasBindPressed( "+attack" ) then
+            
+            Hide()
 
             timer.Remove( "wepWheel.FastOpenHide" )
-            timer.Create( "wepWheel.FastOpenHide", 1, 1, function() 
-                wepWheel.Hide()
-            end)
 
-            hook.Add( "StartCommand", "wepWheelwheel.NullControl", function( ply, cmd )
-                cmd:RemoveKey( IN_ATTACK )
-            end)
+            wepWheel.onNumsOpen = false
         end
     end
 
-    if OnBindPressed( "+attack" ) then
-        
-        wepWheel.Hide()
-
-        timer.Remove( "wepWheel.FastOpenHide" )
-
-        wepWheel.onNumsOpen = false
-        return
-    end
-
+    -- SWITCHING BY NUMBERS --
 
     local function IsKeyDown( button )
 
@@ -715,18 +761,19 @@ function wepWheel.CreateMove( cmd )
         isDown = input.IsMouseDown( button )
     
         return isDown
+
     end
     
     local function OpenNumsSelection( slotKey )
 
         if slotKey then
 
-            wepWheel.Show()
+            Show()
 
             local previous = wepWheel.selected
             wepWheel.selected = slotKey
 
-            if table.IsEmpty( wepWheel.wepTbl[wepWheel.selected] ) then
+            if table.IsEmpty( wepWheel.wepTable[wepWheel.selected] ) then
                 wepWheel.selected = -1
             end
 
@@ -736,52 +783,82 @@ function wepWheel.CreateMove( cmd )
 
             if wepWheel.onNumsOpen and previous == wepWheel.selected then
                 
-                local slotWep = wepWheel.wepTbl[wepWheel.selected] 
+                local slotWep = wepWheel.wepTable[wepWheel.selected] 
                 if slotWep == nil then return end
                 
-                local pos = wepWheel.selectTbl[wepWheel.selected]
+                local pos = wepWheel.selectedTable[wepWheel.selected]
                 local count = table.Count(slotWep)
 
-                wepWheel.selectTbl[wepWheel.selected] = pos + 1
+                wepWheel.selectedTable[wepWheel.selected] = pos + 1
 
-                if wepWheel.selectTbl[wepWheel.selected] > count then
-                    wepWheel.selectTbl[wepWheel.selected] = 1
+                if wepWheel.selectedTable[wepWheel.selected] > count then
+                    wepWheel.selectedTable[wepWheel.selected] = 1
                 end
                 
                 if count > 1 then
-                    surface.PlaySound( wepWheel.soundList.select )
+                    surface.PlaySound(wepWheel.sound.switch2)
                 end
 
             end
 
             timer.Remove( "wepWheel.FastOpenHide" )
             timer.Create( "wepWheel.FastOpenHide", 1, 1, function() 
-                wepWheel.Hide()
+                Hide()
                 wepWheel.onNumsOpen = false
             end)
 
             wepWheel.onNumsOpen = true
         end
     end
+
+    local keys = {
+        ["slot1"] = 0, ["slot2"] = 1, ["slot3"] = 2, 
+        ["slot4"] = 3, ["slot5"] = 4, ["slot6"] = 5, 
+    }
+
+    for key = 1, 161 do
+        if not keys[input.LookupKeyBinding( key )] then continue end
+
+        if input.WasKeyPressed( key ) or input.WasMousePressed( key ) then
+
+            local bind = input.LookupKeyBinding( key )
+            local ply = LocalPlayer()
+
+            if not hook.Run( "PlayerBindPress", ply, bind ) then
+
+                if shouldOccur then
+                    OpenNumsSelection( keys[input.LookupKeyBinding(key)] )
+
+                    shouldOccur = false
+                    timer.Simple( 0.1, function() shouldOccur = true end )
+                end
+            end
+        end
+    end
+    
 end
 
-local curBool, prevBool = false, false
+local currentBool, previousBool = false, false
 
-function wepWheel.Think()
+function Think()
 
-    local pl = LocalPlayer()
+    -- for blocking this keys when wepWheel is opened --
+    wepWheel.inAttack2 = IsKeyDown( "+attack" )
+    wepWheel.inAttack = IsKeyDown( "+attack2" )
+    wepWheel.inUse = IsKeyDown( "+use" )
+
+    local ply = LocalPlayer()
 
     if wepWheel.isOpened or wepWheel.onFastOpen then
 
         -- important 'globals' --
-        wepWheel.wepTbl = wepWheel.GetWepTable( pl )
-        wepWheel.activeWeapon = wepWheel.ReturnActive( pl )
+        wepWheel.wepTable = GetWepTable( ply )
+        wepWheel.activeWeapon = GetActiveWep( ply )
 
         -- sound play --
         if wepWheel.selected ~= wepWheel.preselected then
             if wepWheel.selected ~= -1 then
-                surface.PlaySound(wepWheel.soundList.select )
-                //wepWheelwheel.SoundPlaySingle( wepWheel.sound.switch1, nil, wepWheel.sound.volume )
+                surface.PlaySound(wepWheel.sound.switch1)
             end
 
             wepWheel.preselected = wepWheel.selected
@@ -795,7 +872,7 @@ function wepWheel.Think()
         local c = math.sqrt(a * a + b * b)
 
         local function ChangeSlot( index )
-            if not table.IsEmpty( wepWheel.wepTbl[index] ) then
+            if not table.IsEmpty( wepWheel.wepTable[index] ) then
                 wepWheel.selected = index
             end
         end
@@ -816,16 +893,53 @@ function wepWheel.Think()
         end
     end
 
-    if not LocalPlayer():Alive() then wepWheel.Hide() end
+    -- open default selection --
+    currentBool = input.IsKeyDown( 17 ) or input.IsMouseDown( 17 )
+
+    if currentBool ~= previousBool then
+
+        local ply = LocalPlayer()
+
+        if currentBool then
+            if not wepWheel.firstCreationBool then
+                Create()
+                wepWheel.firstCreationBool = true
+            end
+
+            Show()
+
+            if ply:Alive() and not vgui.CursorVisible() and not ply:InVehicle() then
+                -- overlay animations --
+                hook.Add("Think", "wepWheel.animation", function()
+                    wepWheel.overlay = Lerp( 10 * FrameTime(), wepWheel.overlay, 1 )
+                end)
+            end
+
+            wepWheel.onFastOpen = false
+            wepWheel.onNumsOpen = false
+            timer.Remove( "wepWheel.FastOpenHide" )
+        else
+            Hide()
+        end
+    
+        gui.EnableScreenClicker(wepWheel.isOpened)
+    
+        previousBool = currentBool
+    end
+
+    if not LocalPlayer():Alive() then Hide() end
 end
 
-hook.Add("Think", "wepWheel.ResolutionCheck", function()
-    currentResolution = ScrW() * ScrH()
+local previousReso, currentReso = 0, 0
 
-    if currentResolution ~= lastResolution then
-        wepWheel.CreateWheel()
-        lastResolution = currentResolution
+-- check if resolution changed --
+hook.Add("Think", "wepWheel.ResolutionCheck", function()
+    currentReso = ScrW() * ScrH()
+
+    if currentReso ~= previousReso then
+        Create()
+        previousReso = currentReso
     end
 end)
 
-wepWheel.Init()
+InitWeaponWheel()
